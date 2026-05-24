@@ -19,7 +19,7 @@ jobs:
       - name: Compilar o LaTeX
         uses: xu-cheng/latex-action@v3
         with:
-          root_file: src/main.tex
+          root_file: main.tex
           working_directory: src
 
       - name: Fazer Upload do PDF gerado (Artefato)
