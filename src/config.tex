@@ -1,0 +1,214 @@
+% ==================================================================
+% CONFIGURAÇÕES INSTITUCIONAIS E PACOTES
+% Este arquivo consolida todas as configurações visuais, pacotes e 
+% macros do Instituto Federal de Sergipe (IFS).
+% ==================================================================
+
+% --- Codificação e Tipografia Moderna ---
+\usepackage{iftex}
+\ifPDFTeX
+    \usepackage[utf8]{inputenc}
+    \usepackage[T1]{fontenc}
+\fi
+
+% --- Fonte acadêmica moderna: Palatino ---
+\usepackage{mathpazo} % Tipografia Palatino clássica (inclusa no TeX Live base)
+\usepackage[
+    activate={true,nocompatibility},
+    tracking=true,
+    factor=1000,
+    stretch=10,
+    shrink=10
+]{microtype}
+\microtypecontext{spacing=nonfrench}
+
+\usepackage{indentfirst}
+\usepackage{color}
+\usepackage{graphicx}
+\usepackage{csquotes}
+
+% --- Matemática e Tabelas ---
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{siunitx}
+
+% Configuração nativa do memoir para legendas ABNT (evita usar o pacote caption que conflita)
+\captionnamefont{\small\bfseries}
+\captiontitlefont{\small}
+\captiondelim{ -- } % Padrão ABNT (travessão separando label do texto)
+
+% --- Código-fonte ---
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{courier} % Fonte monospace padrão de alta compatibilidade
+\renewcommand{\lstlistingname}{Código}
+\definecolor{codeBackground}{HTML}{F8F9FA}
+\definecolor{codeFrame}{HTML}{DEE2E6}
+\definecolor{codeKeyword}{HTML}{0550AE}
+\definecolor{codeString}{HTML}{0A3069}
+\definecolor{codeComment}{HTML}{6E7781}
+\definecolor{codeNumber}{HTML}{953800}
+\lstset{
+    backgroundcolor  = \color{codeBackground},
+    basicstyle       = \ttfamily\small,
+    keywordstyle     = \color{codeKeyword}\bfseries,
+    stringstyle      = \color{codeString},
+    commentstyle     = \color{codeComment}\itshape,
+    numberstyle      = \tiny\color{codeNumber},
+    numbers          = left,
+    keepspaces       = true,
+    columns          = fullflexible,
+    upquote          = true,
+    numbersep        = 8pt,
+    frame            = single,
+    rulecolor        = \color{codeFrame},
+    framesep         = 6pt,
+    xleftmargin      = 16pt,
+    framexleftmargin = 16pt,
+    breaklines       = true,
+    breakatwhitespace= true,
+    showstringspaces = false,
+    tabsize          = 4,
+    captionpos       = t,
+    aboveskip        = 12pt,
+    belowskip        = 12pt,
+    literate         = {á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1
+                       {ú}{{\'u}}1 {ã}{{\~a}}1 {õ}{{\~o}}1
+                       {ç}{{\c{c}}}1 {Ç}{{\c{C}}}1
+                       {ê}{{\^e}}1 {â}{{\^a}}1
+}
+
+% --- Listas ---
+\usepackage{enumitem}
+\setlist{
+    topsep     = 0pt,
+    itemsep    = 0pt,
+    parsep     = 4pt,
+    leftmargin = \parindent
+}
+\setlist[enumerate]{label=\arabic*.}
+\setlist[itemize]{label=\textbullet}
+
+% --- Referências e Hiperlinks ---
+\usepackage[style=abnt, justify, maxbibnames=99]{biblatex}
+\addbibresource{referencias.bib}
+
+\usepackage{xurl}
+\urlstyle{same}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks     = true,
+    linkcolor      = black,
+    citecolor      = black,
+    filecolor      = black,
+    urlcolor       = black,
+    bookmarksdepth = 4
+}
+
+% --- Margens e Espaçamentos (ABNT) ---
+\setlrmarginsandblock{3cm}{2cm}{*}
+\setulmarginsandblock{3cm}{2cm}{*}
+\checkandfixthelayout
+
+\OnehalfSpacing
+\setlength{\parindent}{1.25cm}
+\setlength{\ABNTEXcitacaorecuo}{4cm}
+
+\widowpenalty=10000
+\clubpenalty=10000
+
+% --- Estilização Acadêmica Sóbria ---
+\renewcommand{\ABNTEXchapterfont}{\normalfont\bfseries}
+\renewcommand{\ABNTEXchapterfontsize}{\normalsize} % NBR 14724 exige fonte tamanho 12 uniforme
+\renewcommand{\ABNTEXsectionfont}{\normalfont\bfseries}
+\renewcommand{\ABNTEXsectionfontsize}{\normalsize}
+\renewcommand{\ABNTEXsubsectionfont}{\normalfont\bfseries}
+\renewcommand{\ABNTEXsubsectionfontsize}{\normalsize}
+\setboolean{ABNTEXuppersection}{false} % Apenas capítulos ficam em caixa alta, seções secundárias em caixa baixa
+
+% Nomes de elementos pré e pós-textuais em maiúsculas (ABNT NBR 14724)
+\addto\captionsbrazil{
+    \renewcommand{\bibname}{REFERÊNCIAS}
+    \renewcommand{\contentsname}{SUMÁRIO}
+    \renewcommand{\listfigurename}{LISTA DE FIGURAS}
+    \renewcommand{\listtablename}{LISTA DE TABELAS}
+}
+
+\setlength{\beforechapskip}{18pt}
+\setlength{\afterchapskip}{1.5\baselineskip}
+\chapterstyle{abnt}
+
+\renewcommand{\cftdot}{.}
+\renewcommand{\cftdotsep}{3}
+\setlength{\cftbeforechapterskip}{0.3em}
+
+% ==================================================================
+% MACROS DE IMPRESSÃO (CAPA E FOLHA DE ROSTO IFS)
+% ==================================================================
+
+\renewcommand{\imprimircapa}{%
+  \begin{capa}%
+    \center\bfseries % Todos os elementos da capa em negrito e centralizados (padrão institucional)
+    \OnehalfSpacing
+    
+    \includegraphics[width=3.2cm]{logo_ifs.png}\par
+    \vspace{0.5cm}
+    
+    {\normalsize\MakeUppercase{\imprimirinstituicao}\par}
+    
+    \vspace{3.0cm}
+    
+    {\normalsize\MakeUppercase{\imprimirautor}\par}
+    
+    \vspace{3.0cm}
+    
+    {\normalsize\MakeUppercase{\imprimirtitulo}\par}
+    
+    \vfill
+    
+    {\normalsize\MakeUppercase{\imprimirlocal}\par}
+    {\normalsize\imprimirdata\par}
+  \end{capa}
+}
+
+\makeatletter
+\renewcommand{\imprimirfolhaderosto}{%
+  \begin{folhaderosto}
+    \center
+    \OnehalfSpacing
+    
+    \vspace*{2cm}
+    
+    {\normalsize\MakeUppercase{\imprimirautor}\par}
+    
+    \vspace{4.0cm}
+    
+    {\normalsize\bfseries\MakeUppercase{\imprimirtitulo}\par}
+    
+    \vspace{2.0cm}
+    
+    \begin{flushright}
+    \begin{minipage}{8cm}
+        \SingleSpacing
+        \normalsize
+        \imprimirpreambulo\par
+        \vspace{0.5cm}
+        Orientador: \imprimirorientador
+    \end{minipage}
+    \end{flushright}
+    
+    \vfill
+    
+    {\normalsize\MakeUppercase{\imprimirlocal}\par}
+    {\normalsize\imprimirdata\par}
+  \end{folhaderosto}
+}
+\makeatother
+
+% ==================================================================
+% FIM DAS CONFIGURAÇÕES
+% ==================================================================

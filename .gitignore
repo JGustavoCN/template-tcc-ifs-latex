@@ -1,0 +1,52 @@
+# ==========================================
+# Compilação e Build do LaTeX
+# ==========================================
+# Pasta onde o build ou PDF é gerado pelo Makefile/make.bat
+src/build/
+build/
+
+# Arquivos auxiliares comuns gerados na compilação LaTeX
+*.aux
+*.fdb_latexmk
+*.fls
+*.glg
+*.glo
+*.gls
+*.idx
+*.ilg
+*.ind
+*.ist
+*.lof
+*.log
+*.lot
+*.nav
+*.out
+*.snm
+*.toc
+*.vrb
+*.synctex.gz
+*.synctex(busy)
+*.pdfsync
+
+# Arquivos auxiliares do BibTeX / Biber / BibLaTeX
+*.bbl
+*.bcf
+*.blg
+*.run.xml
+
+# ==========================================
+# Configurações do VS Code (Compartilhadas)
+# ==========================================
+# Ignorar arquivos locais do VS Code, exceto os de configuração do repositório
+.vscode/*
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/extensions.json
+
+# ==========================================
+# Arquivos de Sistema e Pastas Extras
+# ==========================================
+.DS_Store
+Thumbs.db
+example/

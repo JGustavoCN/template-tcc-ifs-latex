@@ -1,0 +1,40 @@
+name: Build TCC (LaTeX)
+
+on:
+  push:
+    branches: [ "main" ] # Roda sempre que houver push na branch main
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: write # Necessário para criar a Release no GitHub
+
+jobs:
+  build_latex:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Compilar o LaTeX
+        uses: xu-cheng/latex-action@v3
+        with:
+          root_file: src/main.tex
+          working_directory: src
+
+      - name: Fazer Upload do PDF gerado (Artefato)
+        uses: actions/upload-artifact@v4
+        with:
+          name: TCC-Final-PDF
+          path: src/main.pdf
+
+      # Opcional: Cria uma Release automática no Github com o PDF
+      - name: Publicar Release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: src/main.pdf
+          tag_name: latest
+          name: Última Versão do TCC
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

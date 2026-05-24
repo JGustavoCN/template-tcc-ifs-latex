@@ -1,0 +1,68 @@
+\documentclass[
+	12pt,
+	oneside,
+	a4paper,
+	english,
+	brazilian,
+	sumario=tradicional,
+	chapter=TITLE
+	]{abntex2}
+
+% Importa toda a "inteligência" e configuração visual da instituição
+\input{config}
+
+% ==========================================
+% DADOS DO TRABALHO
+% ==========================================
+\titulo{Avaliação Experimental de Arquiteturas Baseadas em RAG e MCP}
+\autor{José Gustavo Correia Nascimento}
+\local{Lagarto -- SE}
+\data{2026}
+\instituicao{%
+    Instituto Federal de Educação, Ciência e Tecnologia de Sergipe\par
+    Campus Lagarto\par
+    Bacharelado em Sistemas de Informação
+}
+\tipotrabalho{Trabalho de Conclusão de Curso}
+\preambulo{Trabalho de Conclusão de Curso apresentado ao curso de Bacharelado em Sistemas de Informação do Instituto Federal de Educação, Ciência e Tecnologia de Sergipe, \textit{Campus} Lagarto, como requisito parcial para obtenção do grau de Bacharel em Sistemas de Informação.}
+\orientador{Prof. Diego Armando}
+
+\begin{document}
+
+\frenchspacing
+
+% ------------------------------------------------------------------
+% ELEMENTOS PRÉ-TEXTUAIS
+% ------------------------------------------------------------------
+\imprimircapa
+\imprimirfolhaderosto
+
+% Colocar quando precisa realmente \input{pre-textuais}
+
+% ------------------------------------------------------------------
+% SUMÁRIO
+% ------------------------------------------------------------------
+\pdfbookmark[0]{\contentsname}{toc}
+\tableofcontents*
+\cleardoublepage
+
+% ------------------------------------------------------------------
+% ELEMENTOS TEXTUAIS (CAPÍTULOS)
+% ------------------------------------------------------------------
+\textual
+
+\input{capitulos/01-introducao}
+\input{capitulos/02-referencial}
+\input{capitulos/03-metodologia}
+\input{capitulos/04-resultados}
+\input{capitulos/05-conclusao}
+
+% ------------------------------------------------------------------
+% ELEMENTOS PÓS-TEXTUAIS
+% ------------------------------------------------------------------
+\postextual
+
+\SingleSpacing
+\printbibliography[heading=bibintoc]
+
+\end{document}

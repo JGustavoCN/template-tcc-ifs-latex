@@ -1,0 +1,27 @@
+{
+    // ==========================================
+    // 1. CONFIGURAÇÕES DO LATEX WORKSHOP
+    // ==========================================
+    "latex-workshop.latex.recipe.default": "latexmk",
+    "latex-workshop.latex.autoBuild.run": "onFileChange",
+    "latex-workshop.view.pdf.viewer": "tab",
+    "latex-workshop.latex.outDir": "%DIR%/build",
+    "latex-workshop.latex.autoClean.run": "onBuilt",
+    "latex-workshop.latex.rootFile.useSubFile": false,
+    "latex-workshop.latex.rootFile.doNotPrompt": true,
+
+    // Ignorar avisos chatos e repetitivos no log do LaTeX Workshop
+    "latex-workshop.message.latexlog.exclude": [
+        ".*Ignoring mapping 'brazilian-abnt'.*",
+        ".*brazilian-abnt-abnt.lbx.*",
+        ".*Underfull.*",
+        ".*Overfull.*"
+    ],
+
+    // ==========================================
+    // 2. PREFERÊNCIAS DE VISUALIZADOR
+    // ==========================================
+    "workbench.editorAssociations": {
+        "*.pdf": "latex-workshop-pdf-hook"
+    }
+}

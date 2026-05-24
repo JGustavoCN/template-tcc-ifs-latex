@@ -1,0 +1,14 @@
+{
+  "name": "Ambiente TCC (LaTeX)",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "james-yu.latex-workshop",
+        "valentjn.vscode-ltex"
+      ]
+    }
+  }
+}

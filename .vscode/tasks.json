@@ -1,0 +1,53 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build LaTeX (Nativo)",
+            "type": "shell",
+            "command": ".\\make.bat",
+            "args": ["build"],
+            "windows": {
+                "command": ".\\make.bat",
+                "args": ["build"]
+            },
+            "linux": {
+                "command": "make",
+                "args": ["build"]
+            },
+            "osx": {
+                "command": "make",
+                "args": ["build"]
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Clean LaTeX (Limpar temporários)",
+            "type": "shell",
+            "command": ".\\make.bat",
+            "args": ["clean"],
+            "windows": {
+                "command": ".\\make.bat",
+                "args": ["clean"]
+            },
+            "linux": {
+                "command": "make",
+                "args": ["clean"]
+            },
+            "osx": {
+                "command": "make",
+                "args": ["clean"]
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        }
+    ]
+}
