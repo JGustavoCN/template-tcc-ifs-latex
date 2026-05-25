@@ -18,7 +18,8 @@ jobs:
       - name: Compile LaTeX Document
         uses: xu-cheng/latex-action@v3
         with:
-          root_file: src/main.tex
+          working_directory: src
+          root_file: main.tex
           args: -pdf -file-line-error -halt-on-error -interaction=nonstopmode
 
       - name: Create Overleaf ZIP Pack
