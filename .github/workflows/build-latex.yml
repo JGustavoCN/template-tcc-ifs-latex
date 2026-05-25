@@ -1,40 +1,61 @@
-name: Build TCC (LaTeX)
+name: Build and Deploy LaTeX TCC
 
 on:
   push:
-    branches: [ "main" ] # Roda sempre que houver push na branch main
-  pull_request:
-    branches: [ "main" ]
+    branches:
+      - main
 
 permissions:
-  contents: write # Necessário para criar a Release no GitHub
+  contents: write  # Crucial para criar branches (gh-pages) e publicar Releases
 
 jobs:
-  build_latex:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout do repositório
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Compilar o LaTeX
+      - name: Compile LaTeX Document
         uses: xu-cheng/latex-action@v3
         with:
-          root_file: main.tex
-          working_directory: src
+          root_file: src/main.tex
+          args: -pdf -file-line-error -halt-on-error -interaction=nonstopmode
 
-      - name: Fazer Upload do PDF gerado (Artefato)
-        uses: actions/upload-artifact@v4
-        with:
-          name: TCC-Final-PDF
-          path: src/main.pdf
+      - name: Create Overleaf ZIP Pack
+        run: |
+          # Cria um ZIP contendo apenas o conteúdo essencial para o Overleaf compilar sem sujeira
+          # Inclui o Makefile, os scripts base (se houver) e toda a pasta src/
+          zip -r tcc-overleaf-import.zip Makefile src/
+          
+      - name: Prepare Files for GitHub Pages
+        run: |
+          mkdir -p public
+          cp src/main.pdf public/main.pdf
 
-      # Opcional: Cria uma Release automática no Github com o PDF
-      - name: Publicar Release
-        if: github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v1
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          files: src/main.pdf
-          tag_name: latest
-          name: Última Versão do TCC
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
+          force_orphan: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: "Entrega Automatizada #${{ github.run_number }}"
+          body: |
+            ### 🚀 Nova versão do TCC compilada com sucesso!
+            
+            Esta release foi gerada automaticamente pelo pipeline de CI/CD.
+            
+            * **Commit:** `${{ github.sha }}`
+            * **Download do PDF:** Baixe o arquivo `main.pdf` anexo abaixo.
+            * **Uso no Overleaf:** Baixe o arquivo `tcc-overleaf-import.zip` e faça o upload direto no Overleaf.
+          draft: false
+          prerelease: false
+          files: |
+            src/main.pdf
+            tcc-overleaf-import.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
