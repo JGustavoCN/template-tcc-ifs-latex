@@ -17,7 +17,10 @@ Siga ESTRITAMENTE esta ordem quando o usuário pedir para corrigir comentários 
 2. **Raio-X & Leitura:** Execute `get_doc_skeleton` e `read_doc_content` para ler cirurgicamente o trecho a ser modificado.
 3. **Edição Dupla:**
    - Altere o arquivo `.tex` no repositório local.
-   - Espelhe a alteração na nuvem usando `update_block_by_index` (para blocos complexos) ou `search_and_replace_text` (para texto plano).
+   - Espelhe a alteração na nuvem seguindo estas regras de decisão:
+     - **Regra 1 (Texto Simples):** Quer apenas corrigir um erro de digitação ou trocar uma palavra sem mudar o visual? Use `search_and_replace_text`.
+     - **Regra 2 (Estilo Cirúrgico - NOVA):** Quer apenas colocar uma palavra existente em itálico ou negrito? Use `search_in_doc` para pegar os índices exatos e envie para a ferramenta `apply_text_style`. Essa é a forma mais segura de formatar palavras isoladas sem esbarrar em bloqueios de comentários do parágrafo.
+     - **Regra 3 (Reescrita Estrutural):** O orientador pediu para reescrever a frase ou aplicar formatação em múltiplos trechos de um parágrafo novo? Use `update_block_by_index`, enviando o bloco inteiro com o `\n` no final. (Sujeito à trava de comentários).
 4. **Build Local:** Use o terminal para executar `make build`. Se houver erro, aplique a [Skill: Triagem de Erros] e recompile.
 5. **Limpeza OBRIGATÓRIA:** Após o sucesso, execute `make clean` no terminal para apagar os arquivos temporários, mantendo o git limpo.
 6. **Deploy Google Drive:** Execute a [Skill: Health Check e Setup de Upload] para achar o ID, e use `sync_pdf_to_drive` para atualizar a nuvem.
