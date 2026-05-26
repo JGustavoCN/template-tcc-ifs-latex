@@ -10,6 +10,10 @@ Este repositório fornece um ambiente pronto, profissional e altamente automatiz
 
 Além do suporte à compilação local ou conteinerizada, o grande diferencial deste template é a sua arquitetura preparada para o **Model Context Protocol (MCP)**. Utilizando o servidor **[mcp-gdocs-latex](https://github.com/JGustavoCN/mcp-gdocs-latex)**, agentes de IA podem orquestrar um fluxo supremo de ponta a ponta: lendo feedbacks do seu orientador no Google Docs, espelhando no código LaTeX local, recompilando e sincronizando as atualizações de forma mágica!
 
+## 🤖 Skills do Agente
+
+Para fazer toda a orquestração do MCP junto com este template LaTeX funcionar perfeitamente, o repositório conta com a pasta [`.agents/skills/`](./.agents/skills/). Ela armazena um conjunto de "habilidades" (skills) modulares — como o *TCC-Bridge Workflow* e a *Triagem de Erros* — que ensinam agentes de IA a compilar, editar e sincronizar seu TCC de forma inteligente e segura, sem quebrar o código ABNT.
+
 ---
 
 ## 🚀 Opções de Compartilhamento do PDF
