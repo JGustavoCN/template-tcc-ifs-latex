@@ -3,8 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{TITULO}} | {{INSTITUICAO}}</title>
-  <meta name="description" content="Trabalho de Conclusão de Curso: {{TITULO}} - {{AUTOR}} ({{INSTITUICAO}}).">
+  <title>{{TITULO}} | {{CAMPUS_NOME}}</title>
+  <meta name="description" content="Trabalho de Conclusão de Curso: {{TITULO}} - {{AUTOR}} ({{INSTITUICAO_COMPLETA}}).">
+  
+  <!-- Favicon com a Logo Oficial do Projeto -->
+  <link rel="icon" type="image/svg+xml" href="logo.svg">
+  
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
@@ -14,13 +18,13 @@
       --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       --font-heading: 'Plus Jakarta Sans', var(--font-body);
       
-      /* Dark Theme (Default) */
-      --bg-base: #0a0f1d;
-      --bg-surface: rgba(17, 24, 39, 0.88);
-      --bg-card: rgba(30, 41, 59, 0.75);
-      --bg-drawer: #0f172a;
+      /* Dark Theme (Padrão Sofisticado) */
+      --bg-base: #090d16;
+      --bg-surface: rgba(15, 23, 42, 0.94);
+      --bg-card: rgba(30, 41, 59, 0.7);
+      --bg-drawer: #0d1527;
       --border-subtle: rgba(255, 255, 255, 0.08);
-      --border-hover: rgba(16, 185, 129, 0.35);
+      --border-hover: rgba(16, 185, 129, 0.4);
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
       --text-dim: #64748b;
@@ -29,12 +33,12 @@
       --primary-glow: rgba(16, 185, 129, 0.25);
       --accent: #3b82f6;
       --shadow-elevation: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
-      --header-height: 72px;
+      --header-height: 64px;
     }
 
     [data-theme="light"] {
-      --bg-base: #f8fafc;
-      --bg-surface: rgba(255, 255, 255, 0.92);
+      --bg-base: #f1f5f9;
+      --bg-surface: rgba(255, 255, 255, 0.95);
       --bg-card: #ffffff;
       --bg-drawer: #ffffff;
       --border-subtle: rgba(0, 0, 0, 0.08);
@@ -59,30 +63,15 @@
       font-family: var(--font-body);
       background-color: var(--bg-base);
       color: var(--text-main);
-      min-height: 100vh;
+      height: 100vh;
       display: flex;
       flex-direction: column;
-      overflow-x: hidden;
-      transition: background-color 0.3s ease, color 0.3s ease;
+      overflow: hidden;
+      transition: background-color 0.25s ease, color 0.25s ease;
     }
 
-    .ambient-glow {
-      position: fixed;
-      top: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 100vw;
-      height: 400px;
-      background: radial-gradient(circle at 50% 0%, var(--primary-glow) 0%, transparent 70%);
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    /* Top Navigation Header */
+    /* Top Navigation Header - Limpo, moderno e compacto */
     header {
-      position: sticky;
-      top: 0;
-      z-index: 40;
       height: var(--header-height);
       background: var(--bg-surface);
       backdrop-filter: blur(16px);
@@ -91,90 +80,108 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 2rem;
+      padding: 0 1.25rem;
+      z-index: 40;
+      flex-shrink: 0;
     }
 
     .brand-section {
       display: flex;
       align-items: center;
-      gap: 1rem;
+      gap: 0.85rem;
+      min-width: 0;
+    }
+
+    .brand-logo {
+      height: 38px;
+      width: auto;
+      display: block;
+      border-radius: 6px;
+      transition: transform 0.2s ease;
+    }
+
+    .brand-logo:hover {
+      transform: scale(1.05);
+    }
+
+    .brand-info {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .brand-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
 
     .brand-badge {
       display: inline-flex;
       align-items: center;
-      gap: 0.5rem;
-      padding: 0.35rem 0.75rem;
+      gap: 0.35rem;
+      padding: 0.15rem 0.5rem;
       background: rgba(16, 185, 129, 0.12);
-      border: 1px solid rgba(16, 185, 129, 0.25);
+      border: 1px solid rgba(16, 185, 129, 0.3);
       border-radius: 9999px;
-      font-size: 0.75rem;
-      font-weight: 600;
+      font-size: 0.68rem;
+      font-weight: 700;
       color: var(--primary);
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .brand-badge::before {
-      content: '';
-      width: 6px;
-      height: 6px;
-      background: var(--primary);
-      border-radius: 50%;
-      box-shadow: 0 0 8px var(--primary);
-    }
-
-    .brand-titles {
-      display: flex;
-      flex-direction: column;
-      max-width: 650px;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
     }
 
     .brand-title {
       font-family: var(--font-heading);
-      font-size: 1.05rem;
+      font-size: 0.95rem;
       font-weight: 700;
       color: var(--text-main);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      max-width: 50vw;
     }
 
     .brand-sub {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .header-actions {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.5rem;
+      flex-shrink: 0;
     }
 
     .btn {
       display: inline-flex;
       align-items: center;
-      gap: 0.5rem;
-      padding: 0.55rem 1rem;
+      gap: 0.45rem;
+      padding: 0.45rem 0.85rem;
       border-radius: 8px;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       font-weight: 600;
       text-decoration: none;
       cursor: pointer;
       border: 1px solid transparent;
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      white-space: nowrap;
     }
 
     .btn-primary {
       background: var(--primary);
       color: #ffffff;
-      box-shadow: 0 4px 14px var(--primary-glow);
+      box-shadow: 0 4px 12px var(--primary-glow);
     }
 
     .btn-primary:hover {
       background: var(--primary-hover);
       transform: translateY(-1px);
-      box-shadow: 0 6px 20px var(--primary-glow);
     }
 
     .btn-secondary {
@@ -190,7 +197,7 @@
     }
 
     .btn-icon {
-      padding: 0.55rem;
+      padding: 0.5rem;
       border-radius: 8px;
       background: transparent;
       border: 1px solid var(--border-subtle);
@@ -205,73 +212,114 @@
     .btn-icon:hover {
       color: var(--text-main);
       border-color: var(--text-muted);
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(255, 255, 255, 0.06);
     }
 
-    /* Main Content Layout */
+    /* Main Viewport: O PDF ocupa 100% da largura útil sem barras espremendo */
     main {
       flex: 1;
       display: flex;
-      flex-direction: column;
-      padding: 1.5rem 2rem 2rem;
-      max-width: 1600px;
+      position: relative;
+      overflow: hidden;
       width: 100%;
-      margin: 0 auto;
-      z-index: 1;
-      gap: 1.25rem;
+      height: calc(100vh - var(--header-height));
     }
 
-    /* Metadata Bar */
-    .metadata-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 12px;
-      padding: 1.25rem 1.75rem;
-      box-shadow: var(--shadow-elevation);
+    .pdf-viewport {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #525659;
+    }
+
+    /* Drawer / Off-canvas de Sumário & Detalhes do TCC */
+    .drawer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 50;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    .drawer-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 440px;
+      max-width: 90vw;
+      height: 100vh;
+      background: var(--bg-drawer);
+      border-left: 1px solid var(--border-subtle);
+      box-shadow: -10px 0 35px rgba(0, 0, 0, 0.5);
+      z-index: 60;
+      transform: translateX(100%);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .drawer.active {
+      transform: translateX(0);
+    }
+
+    .drawer-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border-subtle);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 1.5rem;
+      background: var(--bg-surface);
     }
 
-    .meta-group {
+    .drawer-header h2 {
+      font-family: var(--font-heading);
+      font-size: 1.05rem;
+      font-weight: 700;
       display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-    }
-
-    .meta-label {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-dim);
-      font-weight: 600;
-    }
-
-    .meta-value {
-      font-size: 0.95rem;
-      font-weight: 600;
+      align-items: center;
+      gap: 0.5rem;
       color: var(--text-main);
     }
 
-    .meta-separator {
-      width: 1px;
-      height: 36px;
-      background: var(--border-subtle);
-    }
-
-    /* Viewer Area with Optional Sidebar */
-    .viewer-container {
+    .drawer-close {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0.4rem;
+      border-radius: 6px;
       display: flex;
-      gap: 1.25rem;
-      flex: 1;
-      min-height: 75vh;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
     }
 
-    /* Table of Contents Drawer/Panel */
-    .toc-panel {
-      width: 320px;
+    .drawer-close:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .drawer-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* Cartão Completo de Metadados (Informações Oficiais Sem Cortes) */
+    .info-card {
       background: var(--bg-card);
       border: 1px solid var(--border-subtle);
       border-radius: 12px;
@@ -279,28 +327,62 @@
       display: flex;
       flex-direction: column;
       gap: 1rem;
-      max-height: 75vh;
-      overflow-y: auto;
-      box-shadow: var(--shadow-elevation);
-      transition: all 0.3s ease;
     }
 
-    .toc-header {
+    .info-row {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid var(--border-subtle);
-      padding-bottom: 0.75rem;
+      flex-direction: column;
+      gap: 0.2rem;
     }
 
-    .toc-title {
+    .info-label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-dim);
+      font-weight: 600;
+    }
+
+    .info-value {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-main);
+      line-height: 1.35;
+    }
+
+    .info-value.highlight {
+      color: var(--primary);
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    /* Seção do Sumário Interativo */
+    .toc-section {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .toc-section-title {
       font-family: var(--font-heading);
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       font-weight: 700;
       color: var(--text-main);
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      justify-content: space-between;
+    }
+
+    .toc-badge {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      background: rgba(255, 255, 255, 0.06);
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
     }
 
     .toc-list {
@@ -314,90 +396,58 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0.5rem 0.75rem;
+      padding: 0.55rem 0.75rem;
       border-radius: 6px;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       color: var(--text-muted);
       cursor: pointer;
       text-decoration: none;
       transition: all 0.15s ease;
+      line-height: 1.3;
     }
 
     .toc-item:hover {
       background: rgba(16, 185, 129, 0.1);
       color: var(--primary);
-      transform: translateX(3px);
+      transform: translateX(4px);
     }
 
-    .toc-item.chapter {
+    .toc-item.chapter, .toc-item.appendix {
       font-weight: 600;
       color: var(--text-main);
     }
 
+    .toc-item.appendix {
+      border-left: 2px solid var(--primary);
+    }
+
     .toc-item.section {
       padding-left: 1.5rem;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
     }
 
     .toc-item.subsection {
       padding-left: 2.25rem;
-      font-size: 0.75rem;
+      font-size: 0.74rem;
       color: var(--text-dim);
     }
 
     .toc-page {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 600;
       color: var(--text-dim);
       background: rgba(255, 255, 255, 0.05);
-      padding: 0.15rem 0.45rem;
+      padding: 0.12rem 0.4rem;
       border-radius: 4px;
+      margin-left: 0.5rem;
+      flex-shrink: 0;
     }
 
-    /* PDF Viewer Container */
-    .viewer-wrapper {
-      flex: 1;
-      min-height: 75vh;
-      border-radius: 12px;
-      overflow: hidden;
-      border: 1px solid var(--border-subtle);
-      background: #1e293b;
-      box-shadow: var(--shadow-elevation);
-      position: relative;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .pdf-frame {
-      width: 100%;
-      height: 100%;
-      flex: 1;
-      border: none;
-      background: #525659;
-    }
-
-    /* Mobile Fallback */
-    .mobile-fallback {
-      display: none;
-      padding: 2.5rem 1.5rem;
-      text-align: center;
-      background: var(--bg-card);
-      border-radius: 12px;
-      border: 1px solid var(--border-subtle);
-    }
-
-    .fallback-icon {
-      width: 56px;
-      height: 56px;
-      margin: 0 auto 1rem;
-      color: var(--primary);
-    }
-
-    /* Toast */
+    /* Toast Notification */
     .toast {
       position: fixed;
-      bottom: 2rem;
-      right: 2rem;
+      bottom: 1.5rem;
+      right: 1.5rem;
       background: var(--text-main);
       color: var(--bg-base);
       padding: 0.75rem 1.25rem;
@@ -406,7 +456,7 @@
       font-weight: 600;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
       opacity: 0;
-      transform: translateY(10px);
+      transform: translateY(12px);
       pointer-events: none;
       transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       z-index: 100;
@@ -420,72 +470,101 @@
       transform: translateY(0);
     }
 
-    /* Footer */
-    footer {
-      border-top: 1px solid var(--border-subtle);
-      padding: 1.25rem 2rem;
+    /* Mobile Fallback */
+    .mobile-fallback {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: var(--bg-base);
+      padding: 2rem 1.5rem;
       text-align: center;
-      font-size: 0.8rem;
-      color: var(--text-dim);
-      background: var(--bg-surface);
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      z-index: 10;
     }
 
-    footer a {
-      color: var(--primary);
-      text-decoration: none;
-      font-weight: 500;
-    }
-
-    footer a:hover {
-      text-decoration: underline;
-    }
-
-    @media (max-width: 992px) {
-      .toc-panel {
-        display: none;
-      }
-    }
-
-    @media (max-width: 768px) {
-      header {
-        padding: 0 1rem;
+    @media (max-width: 820px) {
+      .brand-title {
+        max-width: 35vw;
       }
       .brand-sub {
         display: none;
       }
-      main {
-        padding: 1rem;
-      }
-      .metadata-card {
-        padding: 1rem;
-        gap: 1rem;
-      }
-      .meta-separator {
+    }
+
+    @media (max-width: 600px) {
+      .brand-title {
         display: none;
       }
-      .viewer-wrapper {
-        min-height: 480px;
+      .btn span {
+        display: none;
       }
-      .mobile-fallback {
-        display: block;
+      .btn {
+        padding: 0.5rem;
       }
     }
   </style>
 </head>
 <body>
 
-  <div class="ambient-glow"></div>
-
   <header>
+    <!-- Identidade Visual com logo.svg Oficial -->
     <div class="brand-section">
-      <span class="brand-badge">TCC ABNT</span>
-      <div class="brand-titles">
-        <h1 class="brand-title">{{INSTITUICAO}}</h1>
-        <span class="brand-sub">{{LOCAL}} &bull; {{DATA}}</span>
+      <img src="logo.svg" alt="Logo Template TCC IFS" class="brand-logo" id="headerLogo" />
+      <div class="brand-info">
+        <div class="brand-title-wrap">
+          <span class="brand-badge">IFS • LAGARTO</span>
+          <span class="brand-title" title="{{TITULO}}">{{TITULO}}</span>
+        </div>
+        <span class="brand-sub">{{AUTOR}} &bull; {{CURSO_NOME}} &bull; {{DATA}}</span>
       </div>
     </div>
 
+    <!-- Barra de Ações com Compartilhar e Sumário -->
     <div class="header-actions">
+      <!-- Botão para abrir o painel com todas as informações e sumário -->
+      <button class="btn btn-secondary" id="openDrawerBtn" title="Ver Sumário e Informações do TCC">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+        <span>Sumário & Detalhes</span>
+      </button>
+
+      <!-- Botão Compartilhar Inteligente -->
+      <button class="btn btn-secondary" id="shareBtn" title="Compartilhar link oficial do TCC">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="18" cy="5" r="3"></circle>
+          <circle cx="6" cy="12" r="3"></circle>
+          <circle cx="18" cy="19" r="3"></circle>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+        </svg>
+        <span>Compartilhar</span>
+      </button>
+
+      <!-- Código-fonte no GitHub -->
+      <a href="{{REPO_URL}}" class="btn btn-secondary" target="_blank" title="Acessar repositório no GitHub">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+        </svg>
+        <span>GitHub</span>
+      </a>
+
+      <!-- Download Direto do PDF -->
+      <a href="main.pdf" download class="btn btn-primary" title="Baixar PDF Oficial">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        <span>Baixar PDF ({{TAMANHO}})</span>
+      </a>
+
+      <!-- Alternador de Tema -->
       <button class="btn-icon" id="themeToggle" title="Alternar tema (Claro/Escuro)">
         <svg id="themeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="5"></circle>
@@ -499,129 +578,122 @@
           <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
         </svg>
       </button>
-
-      <button class="btn-icon" id="copyLinkBtn" title="Copiar link permanente">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-        </svg>
-      </button>
-
-      <a href="{{REPO_URL}}" class="btn btn-secondary" target="_blank" title="Acessar código-fonte no GitHub">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
-        </svg>
-        <span>GitHub</span>
-      </a>
-
-      <a href="main.pdf" class="btn btn-secondary" target="_blank" title="Abrir visualizador nativo">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-          <polyline points="15 3 21 3 21 9"></polyline>
-          <line x1="10" y1="14" x2="21" y2="3"></line>
-        </svg>
-        <span>Tela Cheia</span>
-      </a>
-
-      <a href="main.pdf" download class="btn btn-primary" title="Baixar PDF Oficial">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-          <polyline points="7 10 12 15 17 10"></polyline>
-          <line x1="12" y1="15" x2="12" y2="3"></line>
-        </svg>
-        <span>Baixar PDF ({{TAMANHO}})</span>
-      </a>
     </div>
   </header>
 
   <main>
-    <!-- Metadata Summary Banner (Extraído 100% dinamicamente de src/main.tex e do build) -->
-    <div class="metadata-card">
-      <div class="meta-group" style="flex: 2; min-width: 280px;">
-        <span class="meta-label">Título do Trabalho</span>
-        <span class="meta-value">{{TITULO}}</span>
-      </div>
-
-      <div class="meta-separator"></div>
-
-      <div class="meta-group">
-        <span class="meta-label">Autor</span>
-        <span class="meta-value">{{AUTOR}}</span>
-      </div>
-
-      <div class="meta-separator"></div>
-
-      <div class="meta-group">
-        <span class="meta-label">Orientador</span>
-        <span class="meta-value">{{ORIENTADOR}}</span>
-      </div>
-
-      <div class="meta-separator"></div>
-
-      <div class="meta-group">
-        <span class="meta-label">Volume & Atualização</span>
-        <span class="meta-value" style="color: var(--primary);">{{PAGINAS}} págs &bull; {{DATA_COMPILACAO}}</span>
-      </div>
-    </div>
-
-    <!-- Viewer Area with Dynamic TOC Sidebar -->
-    <div class="viewer-container">
-      <!-- Navegação Interativa do Sumário (Extraído 100% de src/build/main.toc) -->
-      <aside class="toc-panel" id="tocPanel">
-        <div class="toc-header">
-          <div class="toc-title">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-            </svg>
-            <span>Sumário do TCC</span>
-          </div>
-          <span class="toc-page" id="tocItemCount">0 tópicos</span>
-        </div>
-        <ul class="toc-list" id="tocList">
-          <!-- Renderizado dinamicamente via JS a partir do main.toc -->
-        </ul>
-      </aside>
-
-      <!-- Main Desktop PDF Viewport -->
-      <div class="viewer-wrapper">
-        <iframe class="pdf-frame" id="pdfFrame" src="main.pdf#toolbar=1&navpanes=1&zoom=page-width" title="Visualizador do PDF do TCC"></iframe>
-      </div>
-    </div>
-
-    <!-- Mobile friendly callout -->
-    <div class="mobile-fallback">
-      <svg class="fallback-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-        <polyline points="14 2 14 8 20 8"></polyline>
-        <line x1="16" y1="13" x2="8" y2="13"></line>
-        <line x1="16" y1="17" x2="8" y2="17"></line>
-        <polyline points="10 9 9 9 8 9"></polyline>
-      </svg>
-      <h3>Visualização em Dispositivos Móveis</h3>
-      <p>Em navegadores de smartphones, a leitura pelo aplicativo nativo oferece melhor fluidez e suporte a gestos de zoom.</p>
-      <a href="main.pdf" class="btn btn-primary" target="_blank">
-        Abrir PDF no Leitor Nativo
-      </a>
-    </div>
+    <!-- Viewport Total: O PDF ocupa 100% da tela sem barras concorrentes -->
+    <iframe class="pdf-viewport" id="pdfFrame" src="main.pdf#toolbar=1&navpanes=1&zoom=page-width" title="Documento do TCC em PDF"></iframe>
   </main>
 
-  <footer>
-    <p>{{INSTITUICAO}} &bull; {{LOCAL}} &bull; {{DATA}}</p>
-    <p style="margin-top: 0.25rem;">Template TCC IFS com normas ABNT em LaTeX &bull; Commit <code>{{COMMIT_SHA}}</code></p>
-  </footer>
+  <!-- Overlay para o Drawer -->
+  <div class="drawer-overlay" id="drawerOverlay"></div>
 
+  <!-- Drawer Lateral Retrátil com Dados Completos e Sumário -->
+  <aside class="drawer" id="drawer">
+    <div class="drawer-header">
+      <h2>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+        </svg>
+        <span>Informações do Trabalho</span>
+      </h2>
+      <button class="drawer-close" id="closeDrawerBtn" title="Fechar painel">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <div class="drawer-body">
+      <!-- Cartão com Informações Institucionais e Metadados 100% Completos (Sem Cortes) -->
+      <div class="info-card">
+        <div class="info-row">
+          <span class="info-label">Título do Trabalho</span>
+          <span class="info-value">{{TITULO}}</span>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-row">
+            <span class="info-label">Autor</span>
+            <span class="info-value">{{AUTOR}}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Orientador</span>
+            <span class="info-value">{{ORIENTADOR}}</span>
+          </div>
+        </div>
+
+        <div class="info-row">
+          <span class="info-label">Instituição & Campus</span>
+          <span class="info-value">{{INSTITUICAO_NOME}} &bull; {{CAMPUS_NOME}}</span>
+        </div>
+
+        <div class="info-row">
+          <span class="info-label">Curso de Graduação</span>
+          <span class="info-value">{{CURSO_NOME}}</span>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-row">
+            <span class="info-label">Local & Ano</span>
+            <span class="info-value">{{LOCAL}} &bull; {{DATA}}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Volume do PDF</span>
+            <span class="info-value highlight">{{PAGINAS}} págs ({{TAMANHO}})</span>
+          </div>
+        </div>
+
+        <div class="info-row">
+          <span class="info-label">Última Atualização (Horário de Brasília)</span>
+          <span class="info-value" style="font-size: 0.8rem; color: var(--text-muted);">{{DATA_COMPILACAO}}</span>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-row">
+            <span class="info-label">Norma Vigente</span>
+            <span class="info-value" style="font-size: 0.78rem;">ABNT NBR 14724</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Referências</span>
+            <span class="info-value" style="font-size: 0.78rem;">{{TOTAL_REFS_CITADAS}} citadas / {{TOTAL_REFS_BIB}} na base</span>
+          </div>
+        </div>
+
+        <div class="info-row">
+          <span class="info-label">Commit de Compilação</span>
+          <span class="info-value" style="font-family: monospace; font-size: 0.8rem;">{{COMMIT_SHA}}</span>
+        </div>
+      </div>
+
+      <!-- Sumário Navegável Completo (com Capítulos, Apêndices e Anexos) -->
+      <div class="toc-section">
+        <div class="toc-section-title">
+          <span>Sumário do Documento</span>
+          <span class="toc-badge" id="tocBadge">Carregando...</span>
+        </div>
+        <ul class="toc-list" id="tocList">
+          <!-- Injetado dinamicamente via JavaScript -->
+        </ul>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Toast de Notificação -->
   <div class="toast" id="toast">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M20 6L9 17l-5-5"></path>
     </svg>
-    Link copiado para a área de transferência!
+    <span id="toastMessage">Link copiado para a área de transferência!</span>
   </div>
 
   <!-- {{PORTAL_DATA_INJECTION}} -->
 
   <script>
-    // Theme toggling logic
+    // Gerenciamento do Tema Claro / Escuro
     const themeToggle = document.getElementById('themeToggle');
     const html = document.documentElement;
     const themeIcon = document.getElementById('themeIcon');
@@ -649,18 +721,70 @@
       themeIcon.innerHTML = newTheme === 'dark' ? sunIcon : moonIcon;
     });
 
-    // Copy Link functionality with toast
-    const copyBtn = document.getElementById('copyLinkBtn');
-    const toast = document.getElementById('toast');
+    // Controle do Drawer Retrátil
+    const drawer = document.getElementById('drawer');
+    const drawerOverlay = document.getElementById('drawerOverlay');
+    const openDrawerBtn = document.getElementById('openDrawerBtn');
+    const closeDrawerBtn = document.getElementById('closeDrawerBtn');
 
-    copyBtn.addEventListener('click', () => {
-      navigator.clipboard.writeText(window.location.href).then(() => {
-        toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 2500);
+    function openDrawer() {
+      drawer.classList.add('active');
+      drawerOverlay.classList.add('active');
+    }
+
+    function closeDrawer() {
+      drawer.classList.remove('active');
+      drawerOverlay.classList.remove('active');
+    }
+
+    openDrawerBtn.addEventListener('click', openDrawer);
+    closeDrawerBtn.addEventListener('click', closeDrawer);
+    drawerOverlay.addEventListener('click', closeDrawer);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && drawer.classList.contains('active')) {
+        closeDrawer();
+      }
+    });
+
+    // Toast de Feedback
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+    function showToast(msg) {
+      toastMessage.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2800);
+    }
+
+    // Botão de Compartilhar Inteligente (Web Share API com fallback para copiar link)
+    const shareBtn = document.getElementById('shareBtn');
+    shareBtn.addEventListener('click', async () => {
+      const canonicalUrl = window.location.href.split('#')[0];
+      const shareData = {
+        title: '{{TITULO}}',
+        text: 'Trabalho de Conclusão de Curso - {{CAMPUS_NOME}}',
+        url: canonicalUrl
+      };
+
+      if (navigator.share) {
+        try {
+          await navigator.share(shareData);
+          return;
+        } catch (err) {
+          // Se o usuário cancelou o modal nativo, não faz nada
+          if (err.name === 'AbortError') return;
+        }
+      }
+
+      // Fallback seguro: copia a URL limpa para o clipboard
+      navigator.clipboard.writeText(canonicalUrl).then(() => {
+        showToast('Link do TCC copiado para a área de transferência!');
+      }).catch(() => {
+        showToast('Não foi possível copiar o link.');
       });
     });
 
-    // Render Table of Contents from Injected Data
+    // Renderização Dinâmica do Sumário no Drawer
     const pdfFrame = document.getElementById('pdfFrame');
     const dataElement = document.getElementById('tcc-portal-data');
 
@@ -668,13 +792,27 @@
       try {
         const portalData = JSON.parse(dataElement.textContent);
         const tocList = document.getElementById('tocList');
-        const countBadge = document.getElementById('tocItemCount');
+        const tocBadge = document.getElementById('tocBadge');
 
         if (portalData.toc && portalData.toc.length > 0) {
           tocList.innerHTML = '';
-          countBadge.textContent = `${portalData.toc.length} tópicos`;
+          tocBadge.textContent = `${portalData.toc.length} tópicos`;
 
           portalData.toc.forEach(item => {
+            if (item.type === 'part') {
+              // Divisórias como Apêndices ou Anexos
+              const partLi = document.createElement('li');
+              partLi.style.padding = '0.75rem 0.5rem 0.25rem';
+              partLi.style.fontSize = '0.72rem';
+              partLi.style.fontWeight = '700';
+              partLi.style.textTransform = 'uppercase';
+              partLi.style.letterSpacing = '0.06em';
+              partLi.style.color = 'var(--primary)';
+              partLi.textContent = item.title;
+              tocList.appendChild(partLi);
+              return;
+            }
+
             const li = document.createElement('li');
             const a = document.createElement('a');
             a.className = `toc-item ${item.type}`;
@@ -687,13 +825,17 @@
 
             a.addEventListener('click', (e) => {
               e.preventDefault();
-              // Navega o visualizador de PDF diretamente para a página selecionada
+              // Navega o visualizador diretamente para a página selecionada
               pdfFrame.src = `main.pdf#page=${item.page}&zoom=page-width`;
+              // Fecha o Drawer suavemente para dar visão total ao PDF
+              closeDrawer();
             });
 
             li.appendChild(a);
             tocList.appendChild(li);
           });
+        } else {
+          tocBadge.textContent = 'Sem tópicos';
         }
       } catch (e) {
         console.error('Falha ao processar dados do sumário:', e);

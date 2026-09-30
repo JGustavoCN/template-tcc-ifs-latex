@@ -2,15 +2,15 @@
 /**
  * build_portal.js - Construtor do Portal Web Acadêmico Dinâmico para GitHub Pages.
  *
- * Extrai dados 100% reais diretamente das fontes do LaTeX, do PDF e do Git:
+ * Extrai dados 100% reais diretamente das fontes do LaTeX, do PDF, do Sumário e do Git:
  * 1. src/main.tex: Título, Autor, Orientador, Coorientador, Instituição, Local, Data, Tipo do Trabalho.
  * 2. src/config.tex: Diretrizes tipográficas, normas ABNT e layout institucional.
- * 3. src/build/main.toc: Sumário completo com capítulos, seções, apêndices, anexos e números de página.
+ * 3. src/build/main.toc: Sumário completo incluindo Capítulos, Seções, Subseções, Apêndices e Anexos.
  * 4. src/build/main.pdf & main.log: Quantidade exata de páginas e tamanho do arquivo compilado.
  * 5. src/referencias.bib & main.bbl: Contagem de referências catalogadas vs citadas.
- * 6. Git / GitHub Actions: Commit hash, branch, repositório e timestamp da compilação.
+ * 6. Git / GitHub Actions: Commit hash, branch, repositório e timestamp em Horário de Brasília (America/Sao_Paulo).
  *
- * ZERO MOCKS. Todos os dados refletem o estado autêntico dos arquivos do repositório.
+ * ZERO MOCKS. Foco total em usabilidade, leitura limpa do PDF e dados autênticos.
  */
 
 const fs = require('fs');
@@ -34,6 +34,7 @@ function cleanLatex(raw) {
     .replace(/\\textit\{([^}]+)\}/g, '$1')
     .replace(/\\textbf\{([^}]+)\}/g, '$1')
     .replace(/\\underline\{([^}]+)\}/g, '$1')
+    .replace(/\\^/g, '') // limpa acentos TeX como \^e
     .replace(/\\\\/g, ' ')
     .replace(/--/g, '–')
     .replace(/\s+/g, ' ')
@@ -42,7 +43,6 @@ function cleanLatex(raw) {
 
 /**
  * Extrai comandos LaTeX que utilizam chaves com balanceamento robusto de profundidade.
- * Suporta comandos com argumentos aninhados (ex: \textit{Campus}, \par, etc.).
  */
 function extractBracedCommand(text, commandName) {
   const regex = new RegExp('\\\\' + commandName + '\\s*(?:%[^\\n]*\\n\\s*)*\\{');
@@ -54,7 +54,7 @@ function extractBracedCommand(text, commandName) {
   let i = openBrace + 1;
   while (i < text.length && depth > 0) {
     if (text[i] === '\\') {
-      i += 2; // pula caractere de escape
+      i += 2;
       continue;
     }
     if (text[i] === '{') depth++;
@@ -79,6 +79,9 @@ function parseMainTex() {
       orientador: 'Orientador',
       coorientador: null,
       instituicao: 'Instituto Federal de Sergipe',
+      instituicaoLinhas: ['Instituto Federal de Sergipe'],
+      campus: 'Campus Lagarto',
+      curso: 'Bacharelado em Sistemas de Informação',
       local: 'Lagarto – SE',
       data: new Date().getFullYear().toString(),
       tipotrabalho: 'Trabalho de Conclusão de Curso'
@@ -87,11 +90,20 @@ function parseMainTex() {
 
   const content = fs.readFileSync(mainTexPath, 'utf-8');
 
+  const rawInstituicao = extractBracedCommand(content, 'instituicao') || '';
+  const linhasInst = rawInstituicao
+    .split(/\\par|\\\\/)
+    .map(l => cleanLatex(l))
+    .filter(l => l.length > 0);
+
+  const instituicaoNome = linhasInst[0] || 'Instituto Federal de Educação, Ciência e Tecnologia de Sergipe';
+  const campusNome = linhasInst[1] || 'Campus Lagarto';
+  const cursoNome = linhasInst[2] || 'Bacharelado em Sistemas de Informação';
+
   const titulo = cleanLatex(extractBracedCommand(content, 'titulo')) || 'Trabalho de Conclusão de Curso';
   const autor = cleanLatex(extractBracedCommand(content, 'autor')) || 'Autor não informado';
   const orientador = cleanLatex(extractBracedCommand(content, 'orientador')) || 'Orientador não informado';
   const coorientador = cleanLatex(extractBracedCommand(content, 'coorientador'));
-  const instituicao = cleanLatex(extractBracedCommand(content, 'instituicao')) || 'Instituto Federal de Sergipe';
   const local = cleanLatex(extractBracedCommand(content, 'local')) || 'Lagarto – SE';
   const data = cleanLatex(extractBracedCommand(content, 'data')) || new Date().getFullYear().toString();
   const tipotrabalho = cleanLatex(extractBracedCommand(content, 'tipotrabalho')) || 'Trabalho de Conclusão de Curso';
@@ -102,7 +114,10 @@ function parseMainTex() {
     autor,
     orientador,
     coorientador,
-    instituicao,
+    instituicaoCompleta: `${instituicaoNome} – ${campusNome} – ${cursoNome}`,
+    instituicaoNome,
+    campusNome,
+    cursoNome,
     local,
     data,
     tipotrabalho,
@@ -111,7 +126,7 @@ function parseMainTex() {
 }
 
 /**
- * Extrai configurações estruturais e normativas de src/config.tex.
+ * Extrai configurações de src/config.tex.
  */
 function parseConfigTex() {
   const configPath = path.join(srcDir, 'config.tex');
@@ -134,7 +149,7 @@ function parseConfigTex() {
 }
 
 /**
- * Extrai o sumário hierárquico com capítulos, seções e páginas reais de main.toc.
+ * Extrai o sumário hierárquico com capítulos, seções, apêndices e anexos de main.toc.
  */
 function parseToc() {
   let tocPath = path.join(buildDir, 'main.toc');
@@ -148,8 +163,41 @@ function parseToc() {
   const lines = content.split(/\r?\n/);
   const items = [];
 
+  let currentContext = 'corpo'; // 'corpo', 'apendices', 'anexos'
+
   for (const line of lines) {
-    // 1. Capítulo numerado: \contentsline {chapter}{\chapternumberline {1}Introdução}{3}{chapter.1}%
+    // 0. Detectar divisórias de partes (ex: Apêndices, Anexos)
+    const partMatch = line.match(/\\contentsline\s*\{part\}\{([^}]+)\}\{(\d+)\}/);
+    if (partMatch) {
+      const rawTitle = cleanLatex(partMatch[1].replace(/\\.*?\{|\}/g, ''));
+      if (rawTitle.toLowerCase().includes('apêndice') || rawTitle.toLowerCase().includes('apendice')) {
+        currentContext = 'apendices';
+      } else if (rawTitle.toLowerCase().includes('anexo')) {
+        currentContext = 'anexos';
+      }
+      items.push({
+        type: 'part',
+        number: null,
+        title: rawTitle,
+        page: parseInt(partMatch[2], 10)
+      });
+      continue;
+    }
+
+    // 1. Apêndice ou Anexo com letra (ex: \contentsline {appendix}{\chapternumberline {A}Roteiro...}{12}{appendix.A})
+    const appMatch = line.match(/\\contentsline\s*\{appendix\}\{\\chapternumberline\s*\{([^}]+)\}\s*([^}]+)\}\{(\d+)\}/);
+    if (appMatch) {
+      const prefix = currentContext === 'anexos' ? 'Anexo' : 'Apêndice';
+      items.push({
+        type: 'appendix',
+        number: `${prefix} ${appMatch[1].trim()}`,
+        title: cleanLatex(appMatch[2]),
+        page: parseInt(appMatch[3], 10)
+      });
+      continue;
+    }
+
+    // 2. Capítulo numerado: \contentsline {chapter}{\chapternumberline {1}Introdução}{3}{chapter.1}%
     const chapNum = line.match(/\\contentsline\s*\{chapter\}\{\\chapternumberline\s*\{([^}]+)\}\s*([^}]+)\}\{(\d+)\}/);
     if (chapNum) {
       items.push({
@@ -161,11 +209,10 @@ function parseToc() {
       continue;
     }
 
-    // 2. Apêndice / Anexo ou Capítulo Não Numerado: \contentsline {chapter}{Bibliografia}{10}{section*.6}%
+    // 3. Capítulo não numerado (ex: Bibliografia): \contentsline {chapter}{Bibliografia}{10}{section*.6}%
     const chapUnnum = line.match(/\\contentsline\s*\{chapter\}\{([^}]+)\}\{(\d+)\}/);
     if (chapUnnum) {
-      const rawTitle = chapUnnum[1];
-      const title = cleanLatex(rawTitle.replace(/\\.*?\{|\}/g, ''));
+      const title = cleanLatex(chapUnnum[1].replace(/\\.*?\{|\}/g, ''));
       if (title && !title.startsWith('\\')) {
         items.push({
           type: 'chapter',
@@ -177,7 +224,7 @@ function parseToc() {
       continue;
     }
 
-    // 3. Seção secundária: \contentsline {section}{\numberline {1.1}Contextualização}{3}{section.1.1}%
+    // 4. Seção secundária: \contentsline {section}{\numberline {1.1}Contextualização}{3}{section.1.1}%
     const secMatch = line.match(/\\contentsline\s*\{section\}\{\\numberline\s*\{([^}]+)\}\s*([^}]+)\}\{(\d+)\}/);
     if (secMatch) {
       items.push({
@@ -189,7 +236,7 @@ function parseToc() {
       continue;
     }
 
-    // 4. Subseção terciária: \contentsline {subsection}{\numberline {1.4.1}Objetivo Geral}{4}{subsection.1.4.1}%
+    // 5. Subseção terciária: \contentsline {subsection}{\numberline {1.4.1}Objetivo Geral}{4}{subsection.1.4.1}%
     const subsecMatch = line.match(/\\contentsline\s*\{subsection\}\{\\numberline\s*\{([^}]+)\}\s*([^}]+)\}\{(\d+)\}/);
     if (subsecMatch) {
       items.push({
@@ -207,7 +254,6 @@ function parseToc() {
 
 /**
  * Extrai com 100% de precisão as páginas e o tamanho do PDF real compilado.
- * Lê diretamente o binário do PDF e cruza com o log do LaTeX.
  */
 function parsePdfStats() {
   const candidatePdfPaths = [
@@ -232,7 +278,6 @@ function parsePdfStats() {
       const stat = fs.statSync(resolvedPdfPath);
       sizeBytes = stat.size;
 
-      // Lê o PDF para extrair o número exato de páginas inspecionando objetos de página
       const buf = fs.readFileSync(resolvedPdfPath);
       const latinText = buf.toString('latin1');
       const pageMarkers = latinText.match(/\/Type\s*\/Page(?![a-zA-Z])/g);
@@ -240,7 +285,7 @@ function parsePdfStats() {
         pages = pageMarkers.length;
       }
     } catch (e) {
-      console.warn('Aviso: Falha ao ler binário do PDF:', e.message);
+      console.warn('Aviso ao ler binário do PDF:', e.message);
     }
   }
 
@@ -254,7 +299,6 @@ function parsePdfStats() {
     if (fs.existsSync(logPath)) {
       try {
         const logContent = fs.readFileSync(logPath, 'utf-8');
-        // Suporta quebras de linha TeX dentro dos parênteses do log
         const match = logContent.match(/Output written on [\s\S]*?\([\s\r\n]*([0-9]+)\s+pages?,\s*([0-9]+)\s+bytes\)/i);
         if (match) {
           if (!pages) pages = parseInt(match[1], 10);
@@ -316,7 +360,7 @@ function parseReferencesStats() {
 }
 
 /**
- * Coleta metadados autênticos de versionamento do Git e do GitHub Actions.
+ * Coleta metadados autênticos do Git e do GitHub Actions com fuso horário de Brasília forçado.
  */
 function getRepoMetadata() {
   let repo = process.env.GITHUB_REPOSITORY;
@@ -354,19 +398,29 @@ function getRepoMetadata() {
     repo = 'JGustavoCN/template-tcc-ifs-latex';
   }
 
+  // FUSO HORÁRIO DE BRASÍLIA RIGOROSAMENTE FORÇADO (America/Sao_Paulo)
+  const now = new Date();
+  const dateFormatted = now.toLocaleDateString('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+  const timeFormatted = now.toLocaleTimeString('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
   return {
     repoUrl: `https://github.com/${repo}`,
     repoName: repo,
     commitSha,
     branch,
     runNumber,
-    buildDate: new Date().toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+    buildDate: dateFormatted,
+    buildTime: timeFormatted,
+    buildTimestamp: `${dateFormatted} às ${timeFormatted} (Horário de Brasília)`
   };
 }
 
@@ -378,12 +432,7 @@ function buildPortal() {
   console.log('🚀 Iniciando Geração do Portal Web Acadêmico');
   console.log('----------------------------------------------------');
 
-  // Garante que o template mestre exista
-  let templatePath = path.join(webDir, 'template.html');
-  if (!fs.existsSync(templatePath)) {
-    templatePath = path.join(webDir, 'index.html');
-  }
-
+  const templatePath = path.join(webDir, 'template.html');
   if (!fs.existsSync(templatePath)) {
     console.error(`[ERRO] Arquivo modelo não encontrado em: ${templatePath}`);
     process.exit(1);
@@ -406,30 +455,28 @@ function buildPortal() {
     repo
   };
 
-  // 2. Renderização do HTML com substituição dos marcadores
-  let templateHtml = fs.readFileSync(templatePath, 'utf-8');
-
-  templateHtml = templateHtml
-    .replace(/\{\{TITULO\}\}/g, meta.titulo)
-    .replace(/\{\{AUTOR\}\}/g, meta.autor)
-    .replace(/\{\{ORIENTADOR\}\}/g, meta.orientador)
-    .replace(/\{\{COORIENTADOR\}\}/g, meta.coorientador ? ` &bull; Coorientador: ${meta.coorientador}` : '')
-    .replace(/\{\{INSTITUICAO\}\}/g, meta.instituicao)
-    .replace(/\{\{LOCAL\}\}/g, meta.local)
-    .replace(/\{\{DATA\}\}/g, meta.data)
-    .replace(/\{\{PAGINAS\}\}/g, stats.pages.toString())
-    .replace(/\{\{TAMANHO\}\}/g, stats.sizeFormatted)
-    .replace(/\{\{DATA_COMPILACAO\}\}/g, repo.buildDate)
-    .replace(/\{\{COMMIT_SHA\}\}/g, repo.commitSha)
-    .replace(/\{\{REPO_URL\}\}/g, repo.repoUrl);
-
-  // Injeção do payload JSON completo para reatividade do frontend
-  const jsonPayload = `<script id="tcc-portal-data" type="application/json">${JSON.stringify(portalData)}</script>`;
-  templateHtml = templateHtml.replace('<!-- {{PORTAL_DATA_INJECTION}} -->', jsonPayload);
-
-  // 3. Preparação do diretório de saída (public/)
+  // 2. Preparação do diretório de saída (public/)
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
+  }
+
+  // Copia o logo.svg para public/logo.svg (Identidade Visual Oficial)
+  const logoSvgPath = path.join(rootDir, 'logo.svg');
+  if (fs.existsSync(logoSvgPath)) {
+    try {
+      fs.copyFileSync(logoSvgPath, path.join(outputDir, 'logo.svg'));
+      console.log(`[OK] logo.svg copiado com sucesso para: public/logo.svg`);
+    } catch (e) {
+      console.warn(`[AVISO] Não foi possível copiar logo.svg:`, e.message);
+    }
+  }
+
+  // Copia o logo_ifs.png para public/logo_ifs.png
+  const logoIfsPath = path.join(srcDir, 'logo_ifs.png');
+  if (fs.existsSync(logoIfsPath)) {
+    try {
+      fs.copyFileSync(logoIfsPath, path.join(outputDir, 'logo_ifs.png'));
+    } catch (e) {}
   }
 
   // Copia o PDF gerado para public/main.pdf
@@ -443,30 +490,47 @@ function buildPortal() {
     }
   }
 
-  // Copia o logo institucional para a pasta do portal se existir
-  const logoPath = path.join(srcDir, 'logo_ifs.png');
-  if (fs.existsSync(logoPath)) {
-    try {
-      fs.copyFileSync(logoPath, path.join(outputDir, 'logo_ifs.png'));
-    } catch (e) {}
-  }
+  // 3. Renderização do HTML com substituição de marcadores
+  let templateHtml = fs.readFileSync(templatePath, 'utf-8');
 
-  // Grava o arquivo de deploy em public/index.html
+  templateHtml = templateHtml
+    .replace(/\{\{TITULO\}\}/g, meta.titulo)
+    .replace(/\{\{AUTOR\}\}/g, meta.autor)
+    .replace(/\{\{ORIENTADOR\}\}/g, meta.orientador)
+    .replace(/\{\{COORIENTADOR\}\}/g, meta.coorientador ? ` &bull; Coorientador: ${meta.coorientador}` : '')
+    .replace(/\{\{INSTITUICAO_COMPLETA\}\}/g, meta.instituicaoCompleta)
+    .replace(/\{\{INSTITUICAO_NOME\}\}/g, meta.instituicaoNome)
+    .replace(/\{\{CAMPUS_NOME\}\}/g, meta.campusNome)
+    .replace(/\{\{CURSO_NOME\}\}/g, meta.cursoNome)
+    .replace(/\{\{LOCAL\}\}/g, meta.local)
+    .replace(/\{\{DATA\}\}/g, meta.data)
+    .replace(/\{\{PAGINAS\}\}/g, stats.pages.toString())
+    .replace(/\{\{TAMANHO\}\}/g, stats.sizeFormatted)
+    .replace(/\{\{DATA_COMPILACAO\}\}/g, repo.buildTimestamp)
+    .replace(/\{\{DATA_COMPILACAO_CURTA\}\}/g, repo.buildDate)
+    .replace(/\{\{COMMIT_SHA\}\}/g, repo.commitSha)
+    .replace(/\{\{REPO_URL\}\}/g, repo.repoUrl)
+    .replace(/\{\{TOTAL_REFS_BIB\}\}/g, refs.totalBibEntries.toString())
+    .replace(/\{\{TOTAL_REFS_CITADAS\}\}/g, refs.totalCitedEntries.toString());
+
+  // Injeção do payload JSON completo para o Drawer interativo
+  const jsonPayload = `<script id="tcc-portal-data" type="application/json">${JSON.stringify(portalData)}</script>`;
+  templateHtml = templateHtml.replace('<!-- {{PORTAL_DATA_INJECTION}} -->', jsonPayload);
+
+  // Grava em public/index.html (para o deploy no GitHub Pages)
   const outHtmlPath = path.join(outputDir, 'index.html');
   fs.writeFileSync(outHtmlPath, templateHtml, 'utf-8');
 
-  // Atualiza web/index.html como prévia local
-  const localWebHtmlPath = path.join(webDir, 'index.html');
-  fs.writeFileSync(localWebHtmlPath, templateHtml, 'utf-8');
 
   console.log(`[OK] Portal gerado com sucesso em: ${outHtmlPath}`);
   console.log(`     📄 Título:       ${meta.titulo}`);
   console.log(`     👤 Autor:        ${meta.autor}`);
   console.log(`     🎓 Orientador:   ${meta.orientador}`);
-  console.log(`     🏛️  Instituição:  ${meta.instituicao}`);
+  console.log(`     🏛️  Instituição:  ${meta.instituicaoCompleta}`);
   console.log(`     📑 Páginas:      ${stats.pages} (${stats.sizeFormatted})`);
   console.log(`     📚 Referências:  ${refs.totalCitedEntries} citadas / ${refs.totalBibEntries} cadastradas`);
-  console.log(`     📌 Sumário:      ${toc.length} tópicos extraídos do main.toc`);
+  console.log(`     📌 Sumário:      ${toc.length} tópicos extraídos (incluindo Apêndices e Anexos)`);
+  console.log(`     ⏰ Atualizado:   ${repo.buildTimestamp}`);
   console.log(`     🔗 Git Commit:   ${repo.commitSha} (${repo.branch})`);
   console.log('----------------------------------------------------');
 }

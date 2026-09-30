@@ -5,6 +5,8 @@
 src/build/
 build/
 public/
+main.pdf
+src/main.pdf
 
 # Arquivos auxiliares comuns gerados na compilação LaTeX
 *.aux
