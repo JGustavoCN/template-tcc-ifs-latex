@@ -23,7 +23,7 @@ CLEAN_CMD = latexmk -c -outdir=$(BUILD_DIR) -cd $(SRC_DIR)/$(MAIN_FILE)
 CLEAN_ALL_CMD = latexmk -C -outdir=$(BUILD_DIR) -cd $(SRC_DIR)/$(MAIN_FILE)
 
 # Targets principais
-.PHONY: all build figures check verify clean cleanall help check-node
+.PHONY: all build figures check verify portal clean cleanall help check-node
 
 all: figures build clean
 
@@ -48,6 +48,9 @@ check:
 
 verify: check
 
+portal:
+	@node scripts/build_portal.js
+
 clean:
 	@echo "Limpando arquivos auxiliares..."
 	@$(CLEAN_CMD)
@@ -63,8 +66,10 @@ help:
 	@echo "  make build    - Compila o projeto LaTeX gerando o PDF final de forma enxuta."
 	@echo "  make figures  - Compila os diagramas Mermaid (.mmd) em PDF na pasta src/figuras/."
 	@echo "  make check    - Executa o diagnóstico de build, layout, espaçamento e conformidade ABNT."
+	@echo "  make portal   - Gera o portal web interativo dinâmico em public/ (para GitHub Pages)."
 	@echo "  make all      - Executa figures -> build -> clean (pipeline completo)."
 	@echo "  make clean    - Remove arquivos temporários e auxiliares (.aux, .log, etc)."
 	@echo "  make cleanall - Remove todos os arquivos gerados (incluindo o .pdf final)."
 	@echo "  make help     - Exibe esta mensagem de ajuda."
+
 

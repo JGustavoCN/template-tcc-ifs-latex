@@ -41,7 +41,7 @@ jobs:
         run: |
           mkdir -p public
           cp src/main.pdf public/main.pdf
-          cp -r web/* public/
+          node scripts/build_portal.js
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4

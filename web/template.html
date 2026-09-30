@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Avaliação Experimental de Arquiteturas Baseadas em RAG e MCP | Instituto Federal de Educação, Ciência e Tecnologia de Sergipe – Campus Lagarto – Bacharelado em Sistemas de Informação</title>
-  <meta name="description" content="Trabalho de Conclusão de Curso: Avaliação Experimental de Arquiteturas Baseadas em RAG e MCP - José Gustavo Correia Nascimento (Instituto Federal de Educação, Ciência e Tecnologia de Sergipe – Campus Lagarto – Bacharelado em Sistemas de Informação).">
+  <title>{{TITULO}} | {{INSTITUICAO}}</title>
+  <meta name="description" content="Trabalho de Conclusão de Curso: {{TITULO}} - {{AUTOR}} ({{INSTITUICAO}}).">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
@@ -480,8 +480,8 @@
     <div class="brand-section">
       <span class="brand-badge">TCC ABNT</span>
       <div class="brand-titles">
-        <h1 class="brand-title">Instituto Federal de Educação, Ciência e Tecnologia de Sergipe – Campus Lagarto – Bacharelado em Sistemas de Informação</h1>
-        <span class="brand-sub">Lagarto – SE &bull; 2026</span>
+        <h1 class="brand-title">{{INSTITUICAO}}</h1>
+        <span class="brand-sub">{{LOCAL}} &bull; {{DATA}}</span>
       </div>
     </div>
 
@@ -507,7 +507,7 @@
         </svg>
       </button>
 
-      <a href="https://github.com/JGustavoCN/template-tcc-ifs-latex" class="btn btn-secondary" target="_blank" title="Acessar código-fonte no GitHub">
+      <a href="{{REPO_URL}}" class="btn btn-secondary" target="_blank" title="Acessar código-fonte no GitHub">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
         </svg>
@@ -529,7 +529,7 @@
           <polyline points="7 10 12 15 17 10"></polyline>
           <line x1="12" y1="15" x2="12" y2="3"></line>
         </svg>
-        <span>Baixar PDF (204 KB)</span>
+        <span>Baixar PDF ({{TAMANHO}})</span>
       </a>
     </div>
   </header>
@@ -539,28 +539,28 @@
     <div class="metadata-card">
       <div class="meta-group" style="flex: 2; min-width: 280px;">
         <span class="meta-label">Título do Trabalho</span>
-        <span class="meta-value">Avaliação Experimental de Arquiteturas Baseadas em RAG e MCP</span>
+        <span class="meta-value">{{TITULO}}</span>
       </div>
 
       <div class="meta-separator"></div>
 
       <div class="meta-group">
         <span class="meta-label">Autor</span>
-        <span class="meta-value">José Gustavo Correia Nascimento</span>
+        <span class="meta-value">{{AUTOR}}</span>
       </div>
 
       <div class="meta-separator"></div>
 
       <div class="meta-group">
         <span class="meta-label">Orientador</span>
-        <span class="meta-value">Prof. Diego Armando</span>
+        <span class="meta-value">{{ORIENTADOR}}</span>
       </div>
 
       <div class="meta-separator"></div>
 
       <div class="meta-group">
         <span class="meta-label">Volume & Atualização</span>
-        <span class="meta-value" style="color: var(--primary);">11 págs &bull; 30/09/2026, 19:04</span>
+        <span class="meta-value" style="color: var(--primary);">{{PAGINAS}} págs &bull; {{DATA_COMPILACAO}}</span>
       </div>
     </div>
 
@@ -607,8 +607,8 @@
   </main>
 
   <footer>
-    <p>Instituto Federal de Educação, Ciência e Tecnologia de Sergipe – Campus Lagarto – Bacharelado em Sistemas de Informação &bull; Lagarto – SE &bull; 2026</p>
-    <p style="margin-top: 0.25rem;">Template TCC IFS com normas ABNT em LaTeX &bull; Commit <code>9cba459</code></p>
+    <p>{{INSTITUICAO}} &bull; {{LOCAL}} &bull; {{DATA}}</p>
+    <p style="margin-top: 0.25rem;">Template TCC IFS com normas ABNT em LaTeX &bull; Commit <code>{{COMMIT_SHA}}</code></p>
   </footer>
 
   <div class="toast" id="toast">
@@ -618,7 +618,7 @@
     Link copiado para a área de transferência!
   </div>
 
-  <script id="tcc-portal-data" type="application/json">{"meta":{"titulo":"Avaliação Experimental de Arquiteturas Baseadas em RAG e MCP","autor":"José Gustavo Correia Nascimento","orientador":"Prof. Diego Armando","coorientador":"","instituicao":"Instituto Federal de Educação, Ciência e Tecnologia de Sergipe – Campus Lagarto – Bacharelado em Sistemas de Informação","local":"Lagarto – SE","data":"2026","tipotrabalho":"Trabalho de Conclusão de Curso","preambulo":"Trabalho de Conclusão de Curso apresentado ao curso de Bacharelado em Sistemas de Informação do Instituto Federal de Educação, Ciência e Tecnologia de Sergipe, Campus Lagarto, como requisito parcial para obtenção do grau de Bacharel em Sistemas de Informação."},"config":{"norma":"ABNT NBR 14724 / NBR 6023","fonte":"Palatino (mathpazo)","espacamento":"1.5","citacao":"BibLaTeX-ABNT"},"toc":[{"type":"chapter","number":"1","title":"Introdução","page":3},{"type":"section","number":"1.1","title":"Contextualização","page":3},{"type":"section","number":"1.2","title":"Problema de Pesquisa","page":4},{"type":"section","number":"1.3","title":"Hipótese","page":4},{"type":"section","number":"1.4","title":"Objetivos","page":4},{"type":"subsection","number":"1.4.1","title":"Objetivo Geral","page":4},{"type":"subsection","number":"1.4.2","title":"Objetivos Específicos","page":4},{"type":"section","number":"1.5","title":"Justificativa","page":5},{"type":"chapter","number":"2","title":"Referencial Teórico","page":6},{"type":"chapter","number":"3","title":"Metodologia","page":7},{"type":"chapter","number":"4","title":"Resultados e Discussão","page":8},{"type":"chapter","number":"5","title":"Conclusão","page":9},{"type":"chapter","number":null,"title":"Bibliografia","page":10}],"stats":{"pdfPath":"C:\\Projetos\\latex\\template-tcc-ifs-latex\\src\\build\\main.pdf","pages":11,"sizeBytes":208660,"sizeFormatted":"204 KB"},"refs":{"totalBibEntries":2,"totalCitedEntries":2},"repo":{"repoUrl":"https://github.com/JGustavoCN/template-tcc-ifs-latex","repoName":"JGustavoCN/template-tcc-ifs-latex","commitSha":"9cba459","branch":"main","runNumber":"1","buildDate":"30/09/2026, 19:04"}}</script>
+  <!-- {{PORTAL_DATA_INJECTION}} -->
 
   <script>
     // Theme toggling logic

@@ -66,6 +66,7 @@ Sempre utilize o Makefile (ou `make.bat` no Windows). **Nunca execute comandos m
 | `.\make.bat figures` | `make figures` | Converte diagramas `.mmd` em `src/figuras/` para PDF vetorial recortado. |
 | `.\make.bat check` | `make check` | Auditoria inteligente: detecta erros, `Underfull \vbox` (espaços verticais excessivos de tabelas/figuras), `Overfull \hbox` e linter ABNT. |
 | `.\make.bat check --json` | `make check --json` | Retorna o status de auditoria em JSON compacto (ideal para consumo por IAs). |
+| `.\make.bat portal` | `make portal` | Gera o portal web dinâmico com PDF embutido e sumário para o GitHub Pages. |
 | `.\make.bat all` | `make all` | Pipeline completo: `figures` -> `build` -> `clean`. |
 | `.\make.bat clean` | `make clean` | Remove arquivos intermediários (`.aux`, `.log`, etc.), preservando o PDF. |
 | `.\make.bat cleanall` | `make cleanall` | Remove todos os arquivos gerados (incluindo o PDF final). |

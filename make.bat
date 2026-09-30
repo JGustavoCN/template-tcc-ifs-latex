@@ -11,6 +11,7 @@ if "%1"=="build" goto build
 if "%1"=="figures" goto figures
 if "%1"=="check" goto check
 if "%1"=="verify" goto check
+if "%1"=="portal" goto portal
 if "%1"=="all" goto all
 if "%1"=="clean" goto clean
 if "%1"=="cleanall" goto cleanall
@@ -91,6 +92,16 @@ if %ERRORLEVEL% NEQ 0 (
 node scripts\check.js %2 %3 %4
 goto :eof
 
+:portal
+where node >nul 2>nul
+if %ERRORLEVEL% NEQ 0 (
+    echo [AVISO] Node.js nao foi encontrado no sistema.
+    echo Para gerar o portal web, instale o Node.js: https://nodejs.org/
+    exit /b 1
+)
+node scripts\build_portal.js
+goto :eof
+
 :clean
 echo Limpando arquivos auxiliares...
 latexmk -c -outdir=%BUILD_DIR% -cd %SRC_DIR%\%MAIN_FILE%
@@ -110,6 +121,7 @@ echo ========================================================
 echo   .\make.bat build    - Compila o LaTeX gerando o PDF final de forma enxuta.
 echo   .\make.bat figures  - Compila os diagramas .mmd em PDF em src\figuras\
 echo   .\make.bat check    - Executa o diagnostico de build, layout, espacamento e ABNT.
+echo   .\make.bat portal   - Gera o portal web interativo em public\ (GitHub Pages).
 echo   .\make.bat all      - Executa figures -^> build -^> clean (pipeline completo)
 echo   .\make.bat clean    - Remove arquivos temporarios (.aux, .log, .bbl, etc).
 echo   .\make.bat cleanall - Remove todos os arquivos gerados (incluindo .pdf).

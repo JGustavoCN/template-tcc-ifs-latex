@@ -4,6 +4,7 @@
 # Pasta onde o build ou PDF é gerado pelo Makefile/make.bat
 src/build/
 build/
+public/
 
 # Arquivos auxiliares comuns gerados na compilação LaTeX
 *.aux

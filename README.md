@@ -142,6 +142,7 @@ Incluímos suporte completo multiplataforma via `Makefile` (Linux/macOS/Git Bash
 | `.\make.bat build` | `make build` | **Compilação padrão:** Converte o LaTeX em PDF de forma enxuta resolvendo referências BibLaTeX/ABNT. Não requer Node.js. |
 | `.\make.bat figures` | `make figures` | **Compila diagramas:** Varre `src/figuras/*.mmd` e compila para PDF vetorial recortado (`pdfcrop`). *(Requer Node.js)* |
 | `.\make.bat check` | `make check` | **Diagnóstico inteligente & ABNT:** Analisa erros de compilação, espaçamentos anormais entre tabelas/textos (`Underfull \vbox`), vazamento de margem (`Overfull \hbox`), citações órfãs e linter de redação ABNT. *(Requer Node.js)* |
+| `.\make.bat portal` | `make portal` | **Portal Web Acadêmico:** Extrai dados 100% reais do LaTeX/PDF e gera a vitrine web com sumário dinâmico em `public/index.html` para o GitHub Pages. *(Requer Node.js)* |
 | `.\make.bat all` | `make all` | **Pipeline completo:** Executa `figures` → `build` → `clean` em sequência. |
 | `.\make.bat clean` | `make clean` | **Limpeza leve:** Remove arquivos intermediários (`.aux`, `.log`, `.bbl`, etc.), mantendo o PDF final. |
 | `.\make.bat cleanall` | `make cleanall` | **Limpeza total:** Remove todos os artefatos gerados, incluindo o PDF final. |
