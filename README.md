@@ -10,9 +10,11 @@ Este repositório fornece um ambiente pronto, profissional e altamente automatiz
 
 Além do suporte à compilação local ou conteinerizada, o grande diferencial deste template é a sua arquitetura preparada para o **Model Context Protocol (MCP)**. Utilizando o servidor **[mcp-gdocs-latex](https://github.com/JGustavoCN/mcp-gdocs-latex)**, agentes de IA podem orquestrar um fluxo supremo de ponta a ponta: lendo feedbacks do seu orientador no Google Docs, espelhando no código LaTeX local, recompilando e sincronizando as atualizações de forma mágica!
 
-## 🤖 Skills do Agente
+## 🤖 Skills do Agente e Diretrizes de Autonomia
 
 Para fazer toda a orquestração do MCP junto com este template LaTeX funcionar perfeitamente, o repositório conta com a pasta [`.agents/skills/`](./.agents/skills/). Ela armazena um conjunto de "habilidades" (skills) modulares — como o *TCC-Bridge Workflow* e a *Triagem de Erros* — que ensinam agentes de IA a compilar, editar e sincronizar seu TCC de forma inteligente e segura, sem quebrar o código ABNT.
+
+As diretrizes completas de autonomia, comandos de compilação e normas de pesquisa com BibTeX estão detalhadas no arquivo [`AGENTS.md`](./AGENTS.md).
 
 ---
 
@@ -66,9 +68,24 @@ Para facilitar a vida do seu orientador e de recrutadores que visitarem o seu pe
 
 ---
 
+## 🧭 Guia Rápido: O que você precisa instalar?
+
+O template foi projetado para ser modular. Você só instala o que realmente for utilizar:
+
+| O que você deseja fazer? | Ferramentas Necessárias | O que você NÃO precisa |
+| :--- | :--- | :--- |
+| **Escrever o texto e gerar o PDF** *(Uso Básico)* | MiKTeX ou TeX Live + Perl *(ou Docker)* | ❌ Não precisa de Node.js |
+| **Compilar diagramas Mermaid locais** (`make figures`) | Node.js (v18+) + MiKTeX/TeX Live | — |
+| **Executar diagnóstico de layout e ABNT** (`make check`) | Node.js (v18+) | — |
+| **Pipeline completo automatizado** (`make all`) | Node.js (v18+) + MiKTeX/TeX Live | — |
+| **Criar diagramas sem instalar ferramentas** | Navegador acessando [mermaid.live](https://mermaid.live) | ❌ Não precisa de Node.js |
+| **Ambiente 100% isolado sem poluir o computador** | Docker Desktop + VS Code | ❌ Não precisa de nada no host |
+
+---
+
 ## 🛠️ Como usar (Ambiente Isolado via Docker)
 
-Recomendado para não precisar instalar bibliotecas pesadas no seu PC. Tudo roda via Docker.
+Recomendado para quem não quer instalar nenhuma biblioteca no computador. O contêiner já vem com LaTeX, Biber, Node.js e Make pré-instalados.
 
 **Requisitos:**
 
@@ -81,46 +98,100 @@ Recomendado para não precisar instalar bibliotecas pesadas no seu PC. Tudo roda
 1. Faça o clone deste repositório:
 
    ```bash
-   git clone https://github.com/seu-usuario/template-tcc.git
+   git clone https://github.com/JGustavoCN/template-tcc.git
    ```
 
 2. Abra a pasta clonada no VS Code.
 3. O VS Code exibirá uma notificação no canto inferior direito: "Folder contains a Dev Container configuration file".
 4. Clique no botão **"Reopen in Container"** (Reabrir no Contêiner).
-5. Aguarde o VS Code construir a imagem (isso pode demorar alguns minutos na primeira vez, pois ele baixará o LaTeX).
-6. Abra o arquivo `src/main.tex` e pressione `Ctrl+S`. O PDF será gerado na aba ao lado automaticamente!
-
-> **Nota:** Todos os arquivos gerados (incluindo o PDF final compilado localmente) serão salvos dentro da pasta oculta `src/build/` para não poluir sua raiz. Se houver push para a `main`, o GitHub Actions gerará o PDF automaticamente!
+5. Aguarde o VS Code construir a imagem (apenas na primeira vez).
+6. Abra qualquer arquivo `.tex` e aperte `Ctrl+S`. O PDF será compilado na pasta `src/build/`!
 
 ---
 
 ## 🖥️ Como usar (Local nativo sem Docker - Para Windows)
 
-Se você preferir não usar Docker e compilar tudo diretamente na sua máquina usando o Antigravity / VS Code de forma nativa, siga as instruções:
+Se você preferir compilar diretamente na sua máquina usando o Antigravity / VS Code de forma nativa:
 
 ### 1. Instalando Dependências
 
-Abra o **PowerShell** como administrador na pasta do projeto e execute o nosso script de setup. Ele instalará o `MiKTeX` (distribuição LaTeX) e o `Strawberry Perl` (necessário para rodar o `latexmk`):
+Abra o **PowerShell** como administrador na pasta do projeto e execute nosso script automatizado:
 
 ```powershell
 .\setup-windows.ps1
 ```
 
-*Aguarde a conclusão da instalação pelo gerenciador de pacotes Winget e **reinicie** sua IDE ou terminal.*
+O script instalará o `Strawberry Perl` e o `MiKTeX`, e oferecerá a instalação opcional do `Node.js LTS` caso você queira suporte a diagramas Mermaid e diagnósticos do TCC Checker.
 
-### 2. Compilando automaticamente
+*Aguarde a conclusão e **reinicie** sua IDE ou terminal para recarregar o PATH do sistema.*
 
-Abra a pasta do projeto no VS Code ou Antigravity. A extensão **LaTeX Workshop** lerá as configurações da pasta e fará o trabalho duro.
+### 2. Compilando automaticamente e Atalhos da IDE
 
-- Abra `src/main.tex`
-- Aperte `Ctrl+S` para salvar. A compilação será feita na hora!
+Abra a pasta do projeto no VS Code ou Antigravity. As tarefas e atalhos já vêm prontos:
 
-### 3. Compilando via Terminal (Opcional)
+- **Compilação ao Salvar (`Ctrl+S`):** O projeto está configurado com `"onSave"`. Ao salvar qualquer arquivo `.tex`, a compilação dispara automaticamente.
+- **Atalho de Build Geral (`Ctrl+Shift+B`):** Aciona a compilação nativa enxuta via Makefile/make.bat.
+- **Visualização do PDF:** Clique no ícone do LaTeX Workshop ou use o atalho `Ctrl+Alt+V` para abrir a pré-visualização na aba ao lado.
 
-Se preferir rodar manualmente por linha de comando sem depender da extensão, incluímos arquivos `Makefile` e `make.bat` no projeto. Basta rodar:
+### 3. Compilando via Terminal e Tarefas da IDE
 
-- `.\make.bat build` (ou `make build` se tiver o gnu-make)
+Incluímos suporte completo multiplataforma via `Makefile` (Linux/macOS/Git Bash) e `make.bat` (Windows cmd/PowerShell), além de atalhos prontos no VS Code (`Ctrl+Shift+B`):
 
-Para limpar os arquivos `.aux` e `.log` gerados:
+| Comando (Windows) | Comando (Linux/Mac) | O que faz |
+| :--- | :--- | :--- |
+| `.\make.bat build` | `make build` | **Compilação padrão:** Converte o LaTeX em PDF de forma enxuta resolvendo referências BibLaTeX/ABNT. Não requer Node.js. |
+| `.\make.bat figures` | `make figures` | **Compila diagramas:** Varre `src/figuras/*.mmd` e compila para PDF vetorial recortado (`pdfcrop`). *(Requer Node.js)* |
+| `.\make.bat check` | `make check` | **Diagnóstico inteligente & ABNT:** Analisa erros de compilação, espaçamentos anormais entre tabelas/textos (`Underfull \vbox`), vazamento de margem (`Overfull \hbox`), citações órfãs e linter de redação ABNT. *(Requer Node.js)* |
+| `.\make.bat all` | `make all` | **Pipeline completo:** Executa `figures` → `build` → `clean` em sequência. |
+| `.\make.bat clean` | `make clean` | **Limpeza leve:** Remove arquivos intermediários (`.aux`, `.log`, `.bbl`, etc.), mantendo o PDF final. |
+| `.\make.bat cleanall` | `make cleanall` | **Limpeza total:** Remove todos os artefatos gerados, incluindo o PDF final. |
+| `.\make.bat help` | `make help` | Exibe a lista de opções e resumo de uso. |
 
-- `.\make.bat clean`
+> **💡 Dica para IAs e automação:** O comando de verificação suporta a flag `--json` (`.\make.bat check --json` ou `node scripts/check.js --json`), permitindo que agentes de IA inspecionem a saúde do documento em milissegundos sem ler arquivos de log gigantes.
+
+---
+
+## 📊 Como usar Diagramas Mermaid (Dois Caminhos)
+
+O template suporta diagramas declarativos via **[Mermaid](https://mermaid.js.org/)**, permitindo criar fluxogramas, diagramas de arquitetura, classes e sequências que são versionados diretamente no Git.
+
+> **💡 Dica de Edição no VS Code:** Recomendamos a extensão **Mermaid Viewer** (`onlyutkarsh.mermaid-diagram-lens`), já pré-configurada nas extensões recomendadas deste projeto. Com ela, você ganha destaque de sintaxe completo, botões rápidos de CodeLens, pré-visualização com zoom/pan e exportação direta sem sair do editor.
+
+### Caminho A: Automatizado via Terminal (Para quem tem Node.js)
+
+1. Crie seu diagrama com a extensão `.mmd` dentro da pasta `src/figuras/` (veja o modelo em `src/figuras/exemplo-diagrama.mmd`).
+2. Execute o comando:
+
+   ```bash
+   .\make.bat figures   # No Windows
+   make figures         # No Linux/Mac
+   ```
+
+3. O Mermaid CLI (`@mermaid-js/mermaid-cli`) gerará o PDF vetorial correspondente e aplicará o `pdfcrop` automaticamente para remover bordas brancas em excesso.
+4. Para gerar tudo de uma vez (figuras + PDF do TCC + limpeza), use `.\make.bat all`.
+
+### Caminho B: Sem Node.js (Exportação Visual via Navegador)
+
+Se você não possui nem deseja instalar o Node.js na sua máquina, você ainda pode utilizar toda a potência do Mermaid:
+
+1. Acesse o editor online oficial: **[mermaid.live](https://mermaid.live)**.
+2. Escreva o código do seu diagrama interativamente.
+3. No painel de exportação (botão **Actions** / **Download**), selecione **PDF** (ou SVG).
+4. Salve o arquivo baixado diretamente dentro de `src/figuras/meu-diagrama.pdf`.
+5. Execute `.\make.bat build` (ou aperte `Ctrl+S` no VS Code). O LaTeX incluirá a sua figura perfeitamente!
+
+### Como incluir a figura no seu capítulo (Padrão ABNT)
+
+No seu arquivo `.tex` dentro de `src/capitulos/`, inclua o bloco de figura respeitando as normas da ABNT (título no topo, fonte abaixo e numeração/label):
+
+```latex
+\begin{figure}[htbp]
+    \centering
+    \caption{Arquitetura Geral do Sistema Proposto}
+    \includegraphics[width=0.85\textwidth]{figuras/exemplo-diagrama.pdf}
+    \fonte{Elaborado pelo autor (\the\year).}
+    \label{fig:arquitetura-sistema}
+\end{figure}
+```
+
+E no corpo do texto você pode referenciá-la normalmente usando `a \autoref{fig:arquitetura-sistema} ilustra...` ou `como visto na Figura~\ref{fig:arquitetura-sistema}`.

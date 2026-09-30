@@ -94,7 +94,8 @@
 \setlist[itemize]{label=\textbullet}
 
 % --- Referências e Hiperlinks ---
-\usepackage[style=abnt, justify, maxbibnames=99]{biblatex}
+\usepackage[style=abnt, justify, maxbibnames=99, sorting=nty]{biblatex}
+\setlength{\bibitemsep}{\baselineskip} % Espaçamento de 1 linha entre referências distintas (ABNT NBR 6023)
 \addbibresource{referencias.bib}
 
 \usepackage{xurl}
@@ -131,7 +132,7 @@
 \setboolean{ABNTEXuppersection}{false} % Apenas capítulos ficam em caixa alta, seções secundárias em caixa baixa
 
 % Nomes de elementos pré e pós-textuais em maiúsculas (ABNT NBR 14724)
-\addto\captionsbrazil{
+\addto\captionsbrazilian{
     \renewcommand{\bibname}{REFERÊNCIAS}
     \renewcommand{\contentsname}{SUMÁRIO}
     \renewcommand{\listfigurename}{LISTA DE FIGURAS}

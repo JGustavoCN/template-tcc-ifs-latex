@@ -28,6 +28,52 @@
             }
         },
         {
+            "label": "Build Completo (All: Figuras + Build + Clean)",
+            "type": "shell",
+            "command": ".\\make.bat",
+            "args": ["all"],
+            "windows": {
+                "command": ".\\make.bat",
+                "args": ["all"]
+            },
+            "linux": {
+                "command": "make",
+                "args": ["all"]
+            },
+            "osx": {
+                "command": "make",
+                "args": ["all"]
+            },
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Build Figuras (Mermaid -> PDF)",
+            "type": "shell",
+            "command": ".\\make.bat",
+            "args": ["figures"],
+            "windows": {
+                "command": ".\\make.bat",
+                "args": ["figures"]
+            },
+            "linux": {
+                "command": "make",
+                "args": ["figures"]
+            },
+            "osx": {
+                "command": "make",
+                "args": ["figures"]
+            },
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
             "label": "Clean LaTeX (Limpar temporários)",
             "type": "shell",
             "command": ".\\make.bat",
@@ -43,6 +89,50 @@
             "osx": {
                 "command": "make",
                 "args": ["clean"]
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Clean All (Limpeza Total incluindo PDF)",
+            "type": "shell",
+            "command": ".\\make.bat",
+            "args": ["cleanall"],
+            "windows": {
+                "command": ".\\make.bat",
+                "args": ["cleanall"]
+            },
+            "linux": {
+                "command": "make",
+                "args": ["cleanall"]
+            },
+            "osx": {
+                "command": "make",
+                "args": ["cleanall"]
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "TCC Checker (Diagnóstico de Build & ABNT)",
+            "type": "shell",
+            "command": ".\\make.bat",
+            "args": ["check"],
+            "windows": {
+                "command": ".\\make.bat",
+                "args": ["check"]
+            },
+            "linux": {
+                "command": "make",
+                "args": ["check"]
+            },
+            "osx": {
+                "command": "make",
+                "args": ["check"]
             },
             "presentation": {
                 "reveal": "always",

@@ -22,6 +22,15 @@ jobs:
           root_file: main.tex
           args: -pdf -file-line-error -halt-on-error -interaction=nonstopmode
 
+      - name: Setup Node.js for Quality Audit
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run TCC Quality & ABNT Audit
+        run: |
+          node scripts/check.js
+
       - name: Create Overleaf ZIP Pack
         run: |
           # Cria um ZIP contendo apenas o conteúdo essencial para o Overleaf compilar sem sujeira
@@ -32,7 +41,7 @@ jobs:
         run: |
           mkdir -p public
           cp src/main.pdf public/main.pdf
-          echo '<meta http-equiv="refresh" content="0; URL=main.pdf">' > public/index.html
+          cp -r web/* public/
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4

@@ -3,12 +3,16 @@
     // 1. CONFIGURAÇÕES DO LATEX WORKSHOP
     // ==========================================
     "latex-workshop.latex.recipe.default": "latexmk",
-    "latex-workshop.latex.autoBuild.run": "onFileChange",
+    "latex-workshop.latex.autoBuild.run": "onSave",
     "latex-workshop.view.pdf.viewer": "tab",
     "latex-workshop.latex.outDir": "%DIR%/build",
-    "latex-workshop.latex.autoClean.run": "onBuilt",
+    "latex-workshop.latex.autoClean.run": "never",
     "latex-workshop.latex.rootFile.useSubFile": false,
     "latex-workshop.latex.rootFile.doNotPrompt": true,
+    "latex-workshop.latex.watch.files.ignore": [
+        "**/build/**",
+        "**/example/**"
+    ],
 
     // Ignorar avisos chatos e repetitivos no log do LaTeX Workshop
     "latex-workshop.message.latexlog.exclude": [

@@ -16,6 +16,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     lmodern \
     biber \
     latexmk \
+    make \
     git \
+    nodejs \
+    npm \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*

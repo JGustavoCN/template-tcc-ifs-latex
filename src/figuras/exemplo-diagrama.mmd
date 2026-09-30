@@ -1,0 +1,21 @@
+flowchart TD
+    subgraph Frontend["Frontend (Cliente)"]
+        UI["Interface Web / Mobile"]
+    end
+
+    subgraph Backend["Servidor da Aplicação"]
+        API["API RESTful / GraphQL"]
+        Auth["Serviço de Autenticação"]
+        Logic["Regras de Negócio"]
+    end
+
+    subgraph Dados["Camada de Dados"]
+        DB[("Banco de Dados Relacional")]
+        Cache[("Redis / Cache")]
+    end
+
+    UI -->|HTTPS / JSON| API
+    API --> Auth
+    API --> Logic
+    Logic --> DB
+    Logic --> Cache
