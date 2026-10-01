@@ -75,7 +75,10 @@ class TCCChecker {
       textAudit: {
         environmentIssues: [],
         repeatedWords: [],
-        impersonalToneIssues: []
+        impersonalToneIssues: [],
+        prohibitedDashes: [],
+        archaicTermIssues: [],
+        denseParagraphIssues: []
       }
     };
   }
@@ -441,6 +444,98 @@ class TCCChecker {
           });
         });
 
+        // D. Verificação de travessões proibidos (--- ou --) no corpo do texto (skill academic_writing_style)
+        const isContentFile = relPath.startsWith('src/capitulos/') || relPath.startsWith('src/apendices/') || relPath.startsWith('src/anexos/');
+        if (isContentFile) {
+          lines.forEach((line, index) => {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('%') || line.includes('\\captiondelim') || line.includes('\\hypersetup')) return;
+            const codePart = line.split('%')[0];
+            
+            // Remove citações com intervalos numéricos (ex: p.~15--20) e intervalos numéricos soltos
+            const cleanLine = codePart
+              .replace(/\\cite[a-zA-Z]*(\[[^\]]*\])?\{[^}]*\}/g, ' ')
+              .replace(/\b\d+\s*--\s*\d+\b/g, ' ')
+              .replace(/\\caption\{[^}]*\}/g, ' ') // legendas já têm formatação própria
+              .replace(/\\fonte\{[^}]*\}/g, ' ');
+
+            const dashMatch = cleanLine.match(/(\s+---\s+|\s+--\s+|\b\w+---\w+\b|\b\w+--\w+\b)/);
+            if (dashMatch) {
+              this.report.textAudit.prohibitedDashes.push({
+                file: relPath,
+                line: index + 1,
+                term: dashMatch[0].trim(),
+                message: "Uso de travessão ('--' ou '---') para isolar explicações. Prefira parênteses '(...)' ou vírgulas (Diretriz academic_writing_style)."
+              });
+              this.report.summary.suggestionsCount++;
+            }
+          });
+        }
+
+        // E. Termos rebuscados/arcaicos e substituições recomendadas (skill academic_writing_style)
+        const archaicTerms = [
+          { pattern: /\btece(?:m|r)?\s+(?:as\s+)?considera[çc][õo]es\s+finais\b/gi, suggestion: 'apresenta as considerações finais' },
+          { pattern: /\bhipotetiza-se\s+que\b/gi, suggestion: 'a hipótese desta pesquisa é que / pressupõe-se que' },
+          { pattern: /\binsumos\s+emp[íi]ricos\b/gi, suggestion: 'dados empíricos / evidências empíricas' },
+          { pattern: /\bafasta\s+qualquer\s+vi[ée]s\b/gi, suggestion: 'reduz a ocorrência de viés' },
+          { pattern: /\bpercurso\s+metodol[óo]gico\b/gi, suggestion: 'procedimentos metodológicos' },
+          { pattern: /\bn[ãa]o\s+obstante\b/gi, suggestion: 'ainda assim / apesar disso' },
+          { pattern: /\bvisando\s+[àa]\b/gi, suggestion: 'para a / com o intuito de' }
+        ];
+
+        lines.forEach((line, index) => {
+          const trimmed = line.trim();
+          if (trimmed.startsWith('%')) return;
+          const codePart = line.split('%')[0];
+
+          archaicTerms.forEach(({ pattern, suggestion }) => {
+            let aMatch;
+            while ((aMatch = pattern.exec(codePart)) !== null) {
+              this.report.textAudit.archaicTermIssues.push({
+                file: relPath,
+                line: index + 1,
+                term: aMatch[0],
+                suggestion
+              });
+              this.report.summary.suggestionsCount++;
+            }
+          });
+        });
+
+        // F. Parágrafos excessivamente extensos (> 250 palavras sem quebra de parágrafo)
+        if (isContentFile) {
+          const rawParagraphs = content.split(/\r?\n\s*\r?\n/);
+          let currentLineTracker = 1;
+
+          rawParagraphs.forEach((par) => {
+            const parLines = par.split(/\r?\n/);
+            const lineCount = parLines.length;
+            const startLine = currentLineTracker;
+            currentLineTracker += lineCount + 1; // +1 pela linha em branco divisória
+
+            // Remove comentários e comandos de ambiente
+            const cleanPar = parLines
+              .map(l => l.split('%')[0])
+              .join(' ')
+              .replace(/\\[a-zA-Z]+(\[[^\]]*\])?(\{[^}]*\})?/g, ' ')
+              .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, ' ')
+              .trim();
+
+            if (cleanPar.length === 0) return;
+
+            const words = cleanPar.split(/\s+/).filter(w => w.length > 0);
+            if (words.length > 250) {
+              this.report.textAudit.denseParagraphIssues.push({
+                file: relPath,
+                line: startLine,
+                wordCount: words.length,
+                message: `Parágrafo extenso identificado (${words.length} palavras). Blocos densos prejudicam a fluidez científica; divida em períodos menores.`
+              });
+              this.report.summary.suggestionsCount++;
+            }
+          });
+        }
+
       } catch (err) {
         this.report.textAudit.environmentIssues.push({
           file: path.relative(this.rootDir, filePath),
@@ -567,7 +662,7 @@ class TCCChecker {
       }
 
       if (t.impersonalToneIssues.length > 0) {
-        console.log(`  ${CYAN}[SUGESTÃO DE ESTILO]${RESET} ${t.impersonalToneIssues.length} ocorrência(s) de 1ª pessoa no texto (prefira voz impessoal):`);
+        console.log(`  ${CYAN}[SUGESTÃO - VOZ IMPESSOAL]${RESET} ${t.impersonalToneIssues.length} ocorrência(s) de 1ª pessoa no texto (prefira voz impessoal):`);
         t.impersonalToneIssues.slice(0, 4).forEach(item => {
           console.log(`    • ${item.file}:${item.line} - Termo '${item.term}' (${item.description})`);
         });
@@ -576,8 +671,37 @@ class TCCChecker {
         }
       }
 
-      if (t.environmentIssues.length === 0 && t.repeatedWords.length === 0 && t.impersonalToneIssues.length === 0) {
-        console.log(`  ${GREEN}[OK]${RESET} Figuras, tabelas e redação seguem integralmente o padrão ABNT.`);
+      if (t.prohibitedDashes.length > 0) {
+        console.log(`  ${YELLOW}[ESTILO - PONTUAÇÃO]${RESET} ${t.prohibitedDashes.length} travessão(ões) ('--' ou '---') no corpo do texto (prefira parênteses ou vírgulas):`);
+        t.prohibitedDashes.slice(0, 4).forEach(item => {
+          console.log(`    • ${item.file}:${item.line} - Trecho: '${item.term}'`);
+        });
+        if (t.prohibitedDashes.length > 4) {
+          console.log(`    ... e mais ${t.prohibitedDashes.length - 4} ocorrência(s).`);
+        }
+      }
+
+      if (t.archaicTermIssues.length > 0) {
+        console.log(`  ${CYAN}[ESTILO - VOCABULÁRIO]${RESET} ${t.archaicTermIssues.length} sugestão(ões) de substituição de termos arcaicos/pedantes:`);
+        t.archaicTermIssues.slice(0, 4).forEach(item => {
+          console.log(`    • ${item.file}:${item.line} - '${item.term}' ➔ Sugestão: '${item.suggestion}'`);
+        });
+        if (t.archaicTermIssues.length > 4) {
+          console.log(`    ... e mais ${t.archaicTermIssues.length - 4} sugestão(ões).`);
+        }
+      }
+
+      if (t.denseParagraphIssues.length > 0) {
+        console.log(`  ${YELLOW}[ESTILO - FLUIDEZ]${RESET} ${t.denseParagraphIssues.length} parágrafo(s) excessivamente extenso(s) (> 250 palavras):`);
+        t.denseParagraphIssues.forEach(item => {
+          console.log(`    • ${item.file}:${item.line} - ${item.message}`);
+        });
+      }
+
+      if (t.environmentIssues.length === 0 && t.repeatedWords.length === 0 && 
+          t.impersonalToneIssues.length === 0 && t.prohibitedDashes.length === 0 &&
+          t.archaicTermIssues.length === 0 && t.denseParagraphIssues.length === 0) {
+        console.log(`  ${GREEN}[OK]${RESET} Figuras, tabelas e redação seguem integralmente o padrão ABNT e as diretrizes de estilo.`);
       }
     }
 

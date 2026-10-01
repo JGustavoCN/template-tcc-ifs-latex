@@ -98,7 +98,7 @@ Recomendado para quem não quer instalar nenhuma biblioteca no computador. O con
 1. Faça o clone deste repositório:
 
    ```bash
-   git clone https://github.com/JGustavoCN/template-tcc.git
+   git clone https://github.com/JGustavoCN/template-tcc-ifs-latex.git
    ```
 
 2. Abra a pasta clonada no VS Code.

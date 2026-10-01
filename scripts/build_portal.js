@@ -24,19 +24,62 @@ const webDir = path.join(rootDir, 'web');
 const outputDir = path.join(rootDir, 'public');
 
 /**
+ * Decodifica notação de acentos do LaTeX (\^e, \'a, \~a, \c{c}) para caracteres UTF-8 reais.
+ */
+function decodeLatexAccents(str) {
+  if (!str) return '';
+  return str
+    .replace(/\\c\{c\}/gi, 'ç')
+    .replace(/\\\^[eE]/g, (m) => m[2] === 'E' ? 'Ê' : 'ê')
+    .replace(/\\\^\{([eE])\}/g, (m, p1) => p1 === 'E' ? 'Ê' : 'ê')
+    .replace(/\\\^[aA]/g, (m) => m[2] === 'A' ? 'Â' : 'â')
+    .replace(/\\\^\{([aA])\}/g, (m, p1) => p1 === 'A' ? 'Â' : 'â')
+    .replace(/\\\^[oO]/g, (m) => m[2] === 'O' ? 'Ô' : 'ô')
+    .replace(/\\\^\{([oO])\}/g, (m, p1) => p1 === 'O' ? 'Ô' : 'ô')
+    .replace(/\\'([aAeEiIoOuU])/g, (m, p1) => {
+      const map = { a:'á', e:'é', i:'í', o:'ó', u:'ú', A:'Á', E:'É', I:'Í', O:'Ó', U:'Ú' };
+      return map[p1] || p1;
+    })
+    .replace(/\\'\{([aAeEiIoOuU])\}/g, (m, p1) => {
+      const map = { a:'á', e:'é', i:'í', o:'ó', u:'ú', A:'Á', E:'É', I:'Í', O:'Ó', U:'Ú' };
+      return map[p1] || p1;
+    })
+    .replace(/\\`([aAeEiIoOuU])/g, (m, p1) => {
+      const map = { a:'à', e:'è', i:'ì', o:'ò', u:'ù', A:'À', E:'È', I:'Ì', O:'Ò', U:'Ù' };
+      return map[p1] || p1;
+    })
+    .replace(/\\`\{([aAeEiIoOuU])\}/g, (m, p1) => {
+      const map = { a:'à', e:'è', i:'ì', o:'ò', u:'ù', A:'À', E:'È', I:'Ì', O:'Ò', U:'Ù' };
+      return map[p1] || p1;
+    })
+    .replace(/\\~([aAoOnN])/g, (m, p1) => {
+      const map = { a:'ã', o:'õ', n:'ñ', A:'Ã', O:'Õ', N:'Ñ' };
+      return map[p1] || p1;
+    })
+    .replace(/\\~\{([aAoOnN])\}/g, (m, p1) => {
+      const map = { a:'ã', o:'õ', n:'ñ', A:'Ã', O:'Õ', N:'Ñ' };
+      return map[p1] || p1;
+    })
+    .replace(/\\\^/g, '')
+    .replace(/\\'/g, '')
+    .replace(/\\~/g, '')
+    .replace(/\\`/g, '');
+}
+
+/**
  * Remove formatações de LaTeX, comentários e quebras de linha para texto puro legível.
  */
 function cleanLatex(raw) {
   if (!raw) return '';
-  return raw
+  return decodeLatexAccents(raw)
     .replace(/%[^\n]*/g, '') // remove comentários de linha
     .replace(/\\par/g, ' – ')
     .replace(/\\textit\{([^}]+)\}/g, '$1')
     .replace(/\\textbf\{([^}]+)\}/g, '$1')
     .replace(/\\underline\{([^}]+)\}/g, '$1')
-    .replace(/\\^/g, '') // limpa acentos TeX como \^e
     .replace(/\\\\/g, ' ')
     .replace(/--/g, '–')
+    .replace(/\\/g, '') // remove qualquer barra residual
     .replace(/\s+/g, ' ')
     .trim();
 }

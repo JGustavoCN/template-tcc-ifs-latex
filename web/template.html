@@ -808,7 +808,10 @@
               partLi.style.textTransform = 'uppercase';
               partLi.style.letterSpacing = '0.06em';
               partLi.style.color = 'var(--primary)';
-              partLi.textContent = item.title;
+              partLi.textContent = (item.title || '')
+                .replace(/\\\^[eE]/g, (m) => m[2] === 'E' ? 'Ê' : 'ê')
+                .replace(/\\.*?\{|\}/g, '')
+                .replace(/\\/g, '');
               tocList.appendChild(partLi);
               return;
             }
