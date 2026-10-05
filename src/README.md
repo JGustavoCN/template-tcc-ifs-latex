@@ -13,6 +13,7 @@ A pasta `src/` contém todo o código-fonte acadêmico e as configurações inst
 ```text
 src/
 ├── main.tex                  ← Arquivo mestre (estruturação do documento e inclusão de partes)
+├── metadados.tex             ← Área do Aluno: dados do trabalho (título, autor, orientador, banca)
 ├── config.tex                ← Área Restrita: configurações institucionais do IFS, pacotes e tipografia
 ├── pre-textuais.tex          ← Elementos pré-textuais opcionais (dedicatória, agradecimentos, epígrafe)
 ├── referencias.bib           ← Base única de verdade bibliográfica (BibLaTeX / NBR 6023)
@@ -45,6 +46,7 @@ A compilação e a manutenção do template são gerenciadas exclusivamente atra
 | `.\make.bat figures` | `make figures` | **Diagramas como código:** Varre `src/figuras/*.mmd` e compila para PDF vetorial recortado (`pdfcrop`). |
 | `.\make.bat check` | `make check` | **Auditoria inteligente:** Detecta erros, espaços excessivos (`Underfull \vbox`), vazamento de margem (`Overfull \hbox`), citações órfãs e linter de redação ABNT. |
 | `.\make.bat portal` | `make portal` | **Portal Web:** Extrai metadados reais do LaTeX/PDF e gera a vitrine web em `public/index.html` para o GitHub Pages. |
+| `.\make.bat update` | `make update` | **Sincronização do Template:** Conecta ao repositório oficial e atualiza automações e regras ABNT preservando seu texto. |
 | `.\make.bat all` | `make all` | **Pipeline completo:** Executa sequencialmente `figures` → `build` → `clean`. |
 | `.\make.bat clean` | `make clean` | **Limpeza leve:** Remove arquivos intermediários (`.aux`, `.log`, `.bbl`, etc.), preservando o PDF final. |
 | `.\make.bat cleanall` | `make cleanall` | **Limpeza total:** Remove todos os artefatos gerados, incluindo o PDF. |

@@ -131,7 +131,11 @@ function parseMainTex() {
     };
   }
 
-  const content = fs.readFileSync(mainTexPath, 'utf-8');
+  const metaTexPath = path.join(srcDir, 'metadados.tex');
+  let content = fs.readFileSync(mainTexPath, 'utf-8');
+  if (fs.existsSync(metaTexPath)) {
+    content = fs.readFileSync(metaTexPath, 'utf-8') + '\n' + content;
+  }
 
   const rawInstituicao = extractBracedCommand(content, 'instituicao') || '';
   const linhasInst = rawInstituicao

@@ -143,6 +143,7 @@ Incluímos suporte completo multiplataforma via `Makefile` (Linux/macOS/Git Bash
 | `.\make.bat figures` | `make figures` | **Compila diagramas:** Varre `src/figuras/*.mmd` e compila para PDF vetorial recortado (`pdfcrop`). *(Requer Node.js)* |
 | `.\make.bat check` | `make check` | **Diagnóstico inteligente & ABNT:** Analisa erros de compilação, espaçamentos anormais entre tabelas/textos (`Underfull \vbox`), vazamento de margem (`Overfull \hbox`), citações órfãs e linter de redação ABNT. *(Requer Node.js)* |
 | `.\make.bat portal` | `make portal` | **Portal Web Acadêmico:** Extrai dados 100% reais do LaTeX/PDF e gera a vitrine web com sumário dinâmico em `public/index.html` para o GitHub Pages. *(Requer Node.js)* |
+| `.\make.bat update` | `make update` | **Sincronização do Template:** Conecta ao repositório oficial e atualiza automações e regras ABNT preservando seu texto. *(Requer Node.js)* |
 | `.\make.bat all` | `make all` | **Pipeline completo:** Executa `figures` → `build` → `clean` em sequência. |
 | `.\make.bat clean` | `make clean` | **Limpeza leve:** Remove arquivos intermediários (`.aux`, `.log`, `.bbl`, etc.), mantendo o PDF final. |
 | `.\make.bat cleanall` | `make cleanall` | **Limpeza total:** Remove todos os artefatos gerados, incluindo o PDF final. |
@@ -196,3 +197,91 @@ No seu arquivo `.tex` dentro de `src/capitulos/`, inclua o bloco de figura respe
 ```
 
 E no corpo do texto você pode referenciá-la normalmente usando `a \autoref{fig:arquitetura-sistema} ilustra...` ou `como visto na Figura~\ref{fig:arquitetura-sistema}`.
+
+---
+
+## 🔄 Como Atualizar seu Projeto para a Versão Mais Recente do Template
+
+Se você iniciou seu TCC em uma versão anterior deste repositório e deseja obter as novas funcionalidades (linter de redação ABNT, novo portal web com sumário dinâmico, compilação de apêndices, automações do CI/CD e suporte a novos pacotes), você pode atualizar seu projeto de forma **segura**, sem perder seus capítulos, referências ou figuras.
+
+### 🛡️ Separação de Responsabilidades (O que é protegido?)
+
+O template foi projetado com separação estrita entre o conteúdo autoral do aluno e a infraestrutura de compilação:
+
+- **Área Livre do Aluno (Preservada):**
+  - `src/metadados.tex` (Seus dados pessoais, título do TCC, orientador e banca)
+  - `src/capitulos/*.tex` (O texto dos seus capítulos)
+  - `src/referencias.bib` (Sua base bibliográfica)
+  - `src/figuras/` (Seus diagramas e ilustrações)
+  - `src/pre-textuais.tex` (Agradecimentos, dedicatória e epígrafe)
+- **Área de Infraestrutura do Template (Atualizada):**
+  - `scripts/` (Linter ABNT `check.js`, gerador de portal `build_portal.js`, etc.)
+  - `web/` (Visualizador web e layout responsivo do GitHub Pages)
+  - `.github/workflows/` (Compilação e deploy na nuvem)
+  - `Makefile` e `make.bat` (Comandos multiplataforma)
+  - `src/config.tex` (Regras tipográficas institucionais do IFS)
+
+---
+
+### Opção 1: Atualização Automática via Terminal (Recomendado)
+
+Se você utiliza Git, basta executar nosso assistente na raiz do projeto:
+
+```bash
+# No Windows:
+.\make.bat update
+
+# No Linux / macOS:
+make update
+```
+
+O assistente conectará ao repositório oficial e listará as melhorias disponíveis. Para aplicar a atualização imediatamente:
+
+```bash
+# No Windows:
+.\make.bat update --merge
+
+# No Linux / macOS:
+make update ARGS="--merge"
+```
+
+---
+
+### Opção 2: Atualização Manual via Git (Linha de Comando)
+
+Você também pode utilizar os comandos padrão do Git:
+
+1. **Salve suas alterações locais:**
+   ```bash
+   git add .
+   git commit -m "chore: salva alterações antes de atualizar o template"
+   ```
+
+2. **Conecte o repositório oficial como `upstream` (apenas na 1ª vez):**
+   ```bash
+   git remote add upstream https://github.com/JGustavoCN/template-tcc-ifs-latex.git
+   ```
+
+3. **Busque as novidades oficiais:**
+   ```bash
+   git fetch upstream
+   ```
+
+4. **Mescle as melhorias na sua branch:**
+   ```bash
+   git merge upstream/main -m "Merge: atualizações oficiais do template IFS"
+   ```
+
+*Nota:* Se houver algum conflito pontual no `src/main.tex`, basta manter seus dados e aceitar os novos comandos (como os blocos de apêndices ou o `\input{metadados}`).
+
+---
+
+### Opção 3: Atualização para quem baixou em .ZIP (Overleaf ou Sem Git)
+
+1. Faça uma cópia de segurança (backup) da sua pasta atual de trabalho.
+2. Baixe o `.zip` mais recente do repositório oficial no GitHub.
+3. Extraia e substitua apenas os arquivos e pastas de automação:
+   - Pastas `scripts/`, `web/`, `.github/`, `.agents/`.
+   - Arquivos `Makefile`, `make.bat`, `.latexmkrc` e `src/config.tex`.
+4. **Não substitua** `src/capitulos/` nem `src/referencias.bib`.
+5. Se o seu `src/main.tex` antigo possuía os dados do trabalho diretamente nele, você pode movê-los para o novo arquivo `src/metadados.tex` para manter seu projeto limpo e desacoplado.
