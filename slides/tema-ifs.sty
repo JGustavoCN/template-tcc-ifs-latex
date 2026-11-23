@@ -1,0 +1,190 @@
+% ==============================================================================
+% tema-ifs.sty — Tema Beamer 16:9 Institucional do IFS (100% compatível com pdflatex)
+% ==============================================================================
+\ProvidesPackage{tema-ifs}[2026/11/23 Tema Beamer Institucional do IFS]
+
+\RequirePackage{tikz}
+\RequirePackage{xcolor}
+\RequirePackage{booktabs}
+
+% Paleta Institucional do IFS (Verde + Grafite + Neutros Sóbrios)
+\definecolor{IFSVerde}{HTML}{006B3F}
+\definecolor{IFSVerdeClaro}{HTML}{10B981}
+\definecolor{IFSVerdeSuave}{HTML}{ECFDF5}
+\definecolor{IFSGrafite}{HTML}{0F172A}
+\definecolor{IFSCinzaTexto}{HTML}{334155}
+\definecolor{IFSCinzaClaro}{HTML}{E2E8F0}
+\definecolor{IFSVermelho}{HTML}{B91C1C}
+\definecolor{IFSFundo}{HTML}{FFFFFF}
+
+% Base limpa sem poluição visual
+\usetheme{default}
+\usefonttheme{professionalfonts}
+
+% Remove ícones de navegação padrão do Beamer
+\setbeamertemplate{navigation symbols}{}
+
+% Cores globais
+\setbeamercolor{normal text}{fg=IFSGrafite, bg=IFSFundo}
+\setbeamercolor{structure}{fg=IFSVerde}
+\setbeamercolor{frametitle}{fg=IFSGrafite, bg=IFSFundo}
+\setbeamercolor{title}{fg=IFSFundo}
+\setbeamercolor{subtitle}{fg=IFSVerdeSuave}
+\setbeamercolor{author}{fg=IFSFundo}
+\setbeamercolor{institute}{fg=IFSCinzaClaro}
+\setbeamercolor{date}{fg=IFSCinzaClaro}
+\setbeamercolor{alerted text}{fg=IFSVermelho}
+\setbeamercolor{item}{fg=IFSVerde}
+\setbeamercolor{subitem}{fg=IFSVerdeClaro}
+\setbeamercolor{section in toc}{fg=IFSGrafite}
+\setbeamercolor{subsection in toc}{fg=IFSCinzaTexto}
+
+% Tipografia limpa (100% pdflatex, sem avisos de fontes externas)
+\setbeamerfont{title}{size=\LARGE, series=\bfseries}
+\setbeamerfont{subtitle}{size=\normalsize, series=\mdseries}
+\setbeamerfont{frametitle}{size=\Large, series=\bfseries}
+\setbeamerfont{framesubtitle}{size=\small, series=\mdseries}
+\setbeamerfont{block title}{size=\normalsize, series=\bfseries}
+\setbeamerfont{footline}{size=\scriptsize}
+\setbeamerfont{bibliography item}{size=\footnotesize}
+\setbeamerfont{bibliography entry author}{size=\footnotesize}
+\setbeamerfont{bibliography entry title}{size=\footnotesize}
+\setbeamerfont{bibliography entry location}{size=\footnotesize}
+\setbeamerfont{bibliography entry note}{size=\footnotesize}
+
+% Listas limpas
+\setbeamertemplate{itemize item}{\raisebox{0.15ex}{\tikz\fill[IFSVerde] (0,0) circle (2pt);}}
+\setbeamertemplate{itemize subitem}{\raisebox{0.2ex}{\tikz\draw[IFSVerdeClaro, thick] (0,0) circle (1.8pt);}}
+\setbeamertemplate{enumerate item}{\textbf{\color{IFSVerde}\insertenumlabel.}}
+
+% Blocos sóbrios (sem sombras 3D pesadas)
+\setbeamercolor{block title}{fg=IFSVerde, bg=IFSVerdeSuave}
+\setbeamercolor{block body}{fg=IFSGrafite, bg=IFSVerdeSuave!45!white}
+\setbeamercolor{block title alerted}{fg=IFSVermelho, bg=IFSVermelho!10!white}
+\setbeamercolor{block body alerted}{fg=IFSGrafite, bg=IFSVermelho!5!white}
+\setbeamercolor{block title example}{fg=IFSGrafite, bg=IFSCinzaClaro!60!white}
+\setbeamercolor{block body example}{fg=IFSGrafite, bg=IFSCinzaClaro!25!white}
+\setbeamertemplate{blocks}[rounded][shadow=false]
+
+% Margens confortáveis em 16:9
+\setbeamersize{text margin left=1.0cm, text margin right=1.0cm}
+
+% Cabeçalho de cada slide (Frametitle com faixa institucional e linha divisória)
+\setbeamertemplate{frametitle}{%
+  \nointerlineskip%
+  \begin{beamercolorbox}[wd=\paperwidth, ht=1.15cm, dp=0.25cm, leftskip=1.0cm, rightskip=1.0cm]{frametitle}%
+    \usebeamerfont{frametitle}\insertframetitle%
+    \ifx\insertframesubtitle\@empty\else%
+      \par\vspace{1pt}{\usebeamerfont{framesubtitle}\color{IFSCinzaTexto}\insertframesubtitle}%
+    \fi%
+  \end{beamercolorbox}%
+  \nointerlineskip%
+  \begin{tikzpicture}[remember picture]
+    \fill[IFSVerde] (0,0) rectangle (2.6cm, 1.8pt);
+    \fill[IFSCinzaClaro] (2.6cm,0) rectangle (\paperwidth, 0.8pt);
+  \end{tikzpicture}%
+}
+
+% Rodapé minimalista com barra de progresso e numeração (oculto no slide de título)
+\setbeamertemplate{footline}{%
+  \ifnum\theframenumber>1\relax%
+    \leavevmode%
+    \hbox{\begin{tikzpicture}%
+      \pgfmathsetmacro{\progress}{min(1, (\insertframenumber - 1) / max(1, \inserttotalframenumber - 1))}%
+      \fill[IFSCinzaClaro] (0,0) rectangle (\paperwidth, 1.5pt);%
+      \fill[IFSVerdeClaro] (0,0) rectangle (\progress*\paperwidth, 1.5pt);%
+    \end{tikzpicture}}%
+    \par\nointerlineskip%
+    \hbox{%
+      \begin{beamercolorbox}[wd=0.38\paperwidth, ht=0.38cm, dp=0.14cm, leftskip=1.0cm]{footline}%
+        \color{IFSCinzaTexto}\insertshortauthor%
+      \end{beamercolorbox}%
+      \begin{beamercolorbox}[wd=0.47\paperwidth, ht=0.38cm, dp=0.14cm, center]{footline}%
+        \color{IFSCinzaTexto}\insertshorttitle%
+      \end{beamercolorbox}%
+      \begin{beamercolorbox}[wd=0.15\paperwidth, ht=0.38cm, dp=0.14cm, rightskip=1.0cm]{footline}%
+        \hfill\textbf{\color{IFSVerde}\insertframenumber}\color{IFSCinzaTexto}\,/\,\inserttotalframenumber%
+      \end{beamercolorbox}%
+    }%
+  \fi%
+}
+
+% Slide de Capa Institucional do IFS (Faixa verde à esquerda + painel elegante)
+\setbeamertemplate{title page}{%
+  \begin{tikzpicture}[remember picture, overlay]
+    % Fundo principal verde institucional escuro
+    \fill[IFSGrafite] (current page.south west) rectangle (current page.north east);
+    % Faixa vertical verde institucional à esquerda
+    \fill[IFSVerde] (current page.south west) rectangle ([xshift=0.55cm]current page.north west);
+    % Detalhe geométrico sutil no canto superior direito
+    \fill[IFSVerde, opacity=0.22] ([xshift=-4.2cm]current page.north east) -- (current page.north east) -- ([yshift=-4.2cm]current page.north east) -- cycle;
+    \fill[IFSVerdeClaro, opacity=0.14] ([xshift=-2.4cm]current page.north east) -- (current page.north east) -- ([yshift=-2.4cm]current page.north east) -- cycle;
+  \end{tikzpicture}%
+  \vspace{0.3cm}%
+  \begin{columns}[T, onlytextwidth]
+    \begin{column}{0.76\textwidth}
+      {\footnotesize\bfseries\color{IFSVerdeClaro}\insertinstitute\par}%
+      \vspace{0.65cm}%
+      {\usebeamerfont{title}\color{IFSFundo}\inserttitle\par}%
+      \ifx\insertsubtitle\@empty\else%
+        \vspace{0.25cm}%
+        {\usebeamerfont{subtitle}\color{IFSCinzaClaro}\insertsubtitle\par}%
+      \fi%
+      \vspace{0.45cm}%
+      \begin{tikzpicture}
+        \fill[IFSVerdeClaro] (0,0) rectangle (3.2cm, 2pt);
+      \end{tikzpicture}\par%
+      \vspace{0.35cm}%
+      {\normalsize\color{IFSFundo}\textbf{\insertauthor}\par}%
+      \vspace{0.25cm}%
+      {\small\color{IFSCinzaClaro}\insertdate\par}%
+    \end{column}
+    \begin{column}{0.22\textwidth}
+      \centering
+      \IfFileExists{../src/logo_ifs.png}{%
+        \vspace{0.2cm}%
+        \begin{tikzpicture}
+          \node[fill=white, rounded corners=6pt, inner sep=8pt] {%
+            \includegraphics[width=0.78\linewidth]{../src/logo_ifs.png}%
+          };
+        \end{tikzpicture}%
+      }{}%
+    \end{column}
+  \end{columns}%
+}
+
+% Slide de divisão automática de seção (opcional via \AtBeginSection)
+\newcommand{\ifssectionframe}{%
+  \begin{frame}[plain]
+    \begin{tikzpicture}[remember picture, overlay]
+      \fill[IFSVerdeSuave] (current page.south west) rectangle (current page.north east);
+      \fill[IFSVerde] (current page.south west) rectangle ([xshift=0.45cm]current page.north west);
+    \end{tikzpicture}
+    \vfill
+    \hspace{0.4cm}{\small\bfseries\color{IFSVerde}SEÇÃO \thesection}\par
+    \vspace{0.2cm}
+    \hspace{0.4cm}{\LARGE\bfseries\color{IFSGrafite}\insertsectionhead}\par
+    \vspace{0.35cm}
+    \hspace{0.4cm}\begin{tikzpicture}\fill[IFSVerdeClaro] (0,0) rectangle (2.8cm, 2pt);\end{tikzpicture}
+    \vfill
+  \end{frame}
+}
+
+% Cartão de destaque métrico para slides de Resultados
+\newcommand{\metriccard}[2]{%
+  \begin{tikzpicture}
+    \node[
+      draw=IFSCinzaClaro,
+      fill=IFSVerdeSuave!60!white,
+      rounded corners=5pt,
+      inner sep=8pt,
+      text width=\dimexpr\linewidth-18pt\relax,
+      align=center
+    ] {%
+      {\LARGE\bfseries\color{IFSVerde}#1}\\[4pt]
+      {\footnotesize\color{IFSCinzaTexto}#2}%
+    };
+  \end{tikzpicture}%
+}
+
+\endinput

@@ -32,6 +32,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const LayoutInspector = require('./lib/layout_inspector');
 const { countProjectWords } = require('./lib/word_counter');
+const { inspectPdfGeometry } = require('./lib/pdf_geometry');
 
 // Suporte a cores ANSI
 const isColorSupported = process.stdout.isTTY && !process.env.NO_COLOR && !process.argv.includes('--no-color');
@@ -94,6 +95,19 @@ class TCCChecker {
         floatCongestions: [],
         specifierIssues: [],
         floatsSummary: []
+      },
+      geometryAudit: {
+        available: false,
+        engine: null,
+        inkEngine: null,
+        pagesAnalyzed: 0,
+        maxXRightPt: 0,
+        rightLimitPt: 538.6,
+        marginOverflows: [],
+        bottomOverflows: [],
+        splitParagraphs: [],
+        inkOverflows: [],
+        hint: null
       },
       textAudit: {
         environmentIssues: [],
@@ -750,6 +764,49 @@ class TCCChecker {
     });
   }
 
+  checkPdfGeometry() {
+    if (this.options.noGeometry) return;
+
+    const pdfFile = this.layoutInspector.resolveBuildArtifact('main.pdf');
+    if (!pdfFile || !fs.existsSync(pdfFile)) return;
+
+    // Descobre a página inicial do Capítulo 1 em main.toc para isolar corpo textual de pré-textuais
+    let firstTextualPage = 1;
+    const tocFile = this.layoutInspector.resolveBuildArtifact('main.toc');
+    if (tocFile && fs.existsSync(tocFile)) {
+      try {
+        const tocContent = fs.readFileSync(tocFile, 'utf-8');
+        const chapMatch = tocContent.match(/\\contentsline\s*\{chapter\}\{\\chapternumberline\s*\{1\}[\s\S]*?\}\{(\d+)\}/);
+        if (chapMatch) {
+          firstTextualPage = parseInt(chapMatch[1], 10);
+        }
+      } catch (e) {}
+    }
+
+    const geo = inspectPdfGeometry(pdfFile, {
+      firstTextualPage,
+      checkInk: !!this.options.ink
+    });
+    this.report.geometryAudit = geo;
+
+    if (!geo.available) return;
+
+    geo.marginOverflows.forEach(item => {
+      if (item.severity === 'ERROR') this.bumpError();
+      else this.bumpWarning();
+    });
+    geo.bottomOverflows.forEach(() => {
+      this.bumpWarning();
+    });
+    geo.splitParagraphs.forEach(() => {
+      this.bumpWarning();
+    });
+    geo.inkOverflows.forEach(item => {
+      if (item.severity === 'ERROR') this.bumpError();
+      else this.bumpWarning();
+    });
+  }
+
   getTexFiles() {
     const searchDirs = ['capitulos', 'apendices', 'anexos'];
     const files = [];
@@ -1090,6 +1147,7 @@ class TCCChecker {
       // Roda LayoutInspector primeiro para popular o mapa de main.lot / main.lof -> .tex
       this.checkLayoutAndFloats();
       this.checkBuildLog();
+      this.checkPdfGeometry();
     }
     if (doText) {
       this.checkTexFiles();
@@ -1268,11 +1326,67 @@ class TCCChecker {
           console.log(`  ${GREEN}[OK]${RESET} Preâmbulo calibrado e todos os ${la.floatsSummary.length} flutuadores sincronizados com suas seções.`);
         }
       }
+
+      // Seção 3: Auditoria Geométrica do PDF (Poppler / PyMuPDF — Progressive Enhancement)
+      if (!this.options.noGeometry) {
+        const g = this.report.geometryAudit;
+        const engineLabel = g.engine ? ` (${g.engine})` : '';
+        this.printSection(`3. Auditoria Geométrica do PDF${engineLabel}`);
+
+        if (!g.available) {
+          console.log(`  ${GRAY}[DICA]${RESET} ${g.hint || 'Auditoria geométrica não executada.'}`);
+        } else {
+          if (g.marginOverflows.length > 0) {
+            console.log(`  ${YELLOW}[GEOMETRIA - MARGEM DIREITA]${RESET} ${g.marginOverflows.length} linha(s) ultrapassando fisicamente a margem ABNT (${g.rightLimitPt}pt):`);
+            g.marginOverflows.slice(0, 8).forEach(ov => {
+              const tag = ov.severity === 'ERROR' ? `${RED}[CORTE DE FOLHA]${RESET}` : `${YELLOW}[ESTOURO]${RESET}`;
+              console.log(`    • ${tag} Pág. ${BOLD}${ov.page}${RESET} (+${ov.excessPt}pt, xMax=${ov.xMax}pt) — "${ov.snippet}"`);
+            });
+            if (g.marginOverflows.length > 8) {
+              console.log(`    ... e mais ${g.marginOverflows.length - 8} ocorrência(s).`);
+            }
+          }
+
+          if (g.bottomOverflows.length > 0) {
+            console.log(`  ${YELLOW}[GEOMETRIA - MARGEM INFERIOR]${RESET} ${g.bottomOverflows.length} bloco(s) invadindo o rodapé ABNT:`);
+            g.bottomOverflows.slice(0, 5).forEach(bo => {
+              console.log(`    • Pág. ${BOLD}${bo.page}${RESET} (+${bo.excessPt}pt, yMax=${bo.yMax}pt) — "${bo.snippet}"`);
+            });
+          }
+
+          if (g.splitParagraphs.length > 0) {
+            console.log(`  ${YELLOW}[GEOMETRIA - PARÁGRAFO PARTIDO]${RESET} ${g.splitParagraphs.length} flutuador(es) aparentando cortar frases ao meio:`);
+            g.splitParagraphs.forEach(sp => {
+              console.log(`    • Pág. ${BOLD}${sp.page}${RESET}: ${sp.floatTitle}`);
+              console.log(`      ${GRAY}Antes:${RESET} "${sp.beforeSnippet}" | ${GRAY}Depois:${RESET} "${sp.afterSnippet}"`);
+              console.log(`      ${GRAY}➔ Sugestão: ${sp.suggestion}${RESET}`);
+            });
+          }
+
+          if (g.inkOverflows.length > 0) {
+            console.log(`  ${YELLOW}[GEOMETRIA - TINTA/VETORES (${g.inkEngine})]${RESET} ${g.inkOverflows.length} página(s) com figura/borda fora da margem:`);
+            g.inkOverflows.slice(0, 6).forEach(io => {
+              console.log(`    • ${io.message}`);
+            });
+          }
+
+          if (
+            g.marginOverflows.length === 0 &&
+            g.bottomOverflows.length === 0 &&
+            g.splitParagraphs.length === 0 &&
+            g.inkOverflows.length === 0
+          ) {
+            const inkNote = g.inkEngine ? ` + tinta real (${g.inkEngine})` : '';
+            console.log(`  ${GREEN}[OK]${RESET} ${g.pagesAnalyzed} páginas inspecionadas (xMax máx: ${g.maxXRightPt}pt / limite ABNT: ${g.rightLimitPt}pt${inkNote}). Nenhum corte de margem ou parágrafo partido.`);
+          }
+        }
+      }
     }
 
-    // Seção 3: Auditoria Textual ABNT
+    // Seção 4: Auditoria Textual ABNT
     if (doText) {
-      this.printSection(doBuild ? '3. Auditoria ABNT e Redação Científica (.tex)' : '1. Auditoria ABNT e Redação Científica (.tex)');
+      const textSectionNum = doBuild ? (this.options.noGeometry ? '3' : '4') : '1';
+      this.printSection(`${textSectionNum}. Auditoria ABNT e Redação Científica (.tex)`);
       const t = this.report.textAudit;
 
       // Se --text-only, mostra citações ausentes detectadas estaticamente aqui
@@ -1378,6 +1492,8 @@ function parseArgs() {
   const options = {
     json: args.includes('--json'),
     noBuild: args.includes('--no-build'),
+    noGeometry: args.includes('--no-geometry'),
+    ink: args.includes('--ink'),
     buildOnly: args.includes('--build-only') || args.includes('-b'),
     textOnly: args.includes('--text-only') || args.includes('-t'),
     showFloats: args.includes('--floats') || args.includes('-f'),
@@ -1391,6 +1507,8 @@ Uso: node scripts/check.js [opções]
 Opções:
   --json            Emite o relatório estruturado em formato JSON (ótimo para IAs e automação)
   --no-build        Audita o último log existente sem disparar auto-build
+  --no-geometry     Pula a inspeção geométrica do PDF (Poppler/PyMuPDF)
+  --ink             Inclui auditoria de tinta real (figuras/bordas) via Ghostscript (mgs/gs)
   --floats, -f      Exibe o catálogo completo de flutuadores (tabelas e figuras) mapeados no PDF
   --build-only, -b  Executa apenas o diagnóstico de compilação, layout e flutuadores
   --text-only, -t   Executa apenas a auditoria ABNT nos arquivos .tex (sem compilar)

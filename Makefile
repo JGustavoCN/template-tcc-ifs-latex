@@ -16,6 +16,8 @@ SRC_DIR = src
 MAIN_FILE = main.tex
 BUILD_DIR = build
 FIGURES_DIR = $(SRC_DIR)/figuras
+SLIDES_DIR = slides
+SLIDES_FILE = apresentacao.tex
 
 MMD_FILES = $(wildcard $(FIGURES_DIR)/*.mmd $(FIGURES_DIR)/diagramas/*.mmd)
 PDF_FIGURES = $(MMD_FILES:.mmd=.pdf)
@@ -24,11 +26,12 @@ PDF_FIGURES = $(MMD_FILES:.mmd=.pdf)
 # O latexmk resolve todas as dependências e múltiplas compilações
 # max_print_line=10000 evita quebra de caminhos de arquivo na coluna 79 do main.log
 BUILD_CMD = $(SET_LOG_WIDTH) latexmk -pdf -silent -interaction=nonstopmode -outdir=$(BUILD_DIR) -cd $(SRC_DIR)/$(MAIN_FILE)
+SLIDES_CMD = $(SET_LOG_WIDTH) latexmk -pdf -silent -interaction=nonstopmode -outdir=$(BUILD_DIR) -cd $(SLIDES_DIR)/$(SLIDES_FILE)
 CLEAN_CMD = latexmk -c -outdir=$(BUILD_DIR) -cd $(SRC_DIR)/$(MAIN_FILE)
 CLEAN_ALL_CMD = latexmk -C -outdir=$(BUILD_DIR) -cd $(SRC_DIR)/$(MAIN_FILE)
 
 # Targets principais
-.PHONY: all build figures check verify portal diff add-ref update clean cleanall help check-node
+.PHONY: all build figures check verify preview slides portal diff add-ref update clean cleanall help check-node
 
 all: figures build clean
 
@@ -58,6 +61,14 @@ check:
 
 verify: check
 
+preview:
+	@node scripts/preview_page.js $(PAGES) $(ARGS)
+
+slides:
+	@echo "Compilando slides da banca ($(SLIDES_DIR)/$(SLIDES_FILE))..."
+	@$(SLIDES_CMD)
+	@echo "Slides compilados em $(SLIDES_DIR)/$(BUILD_DIR)/apresentacao.pdf"
+
 portal:
 	@node scripts/build_portal.js
 
@@ -86,7 +97,9 @@ help:
 	@echo "Opções do Makefile:"
 	@echo "  make build    - Compila o projeto LaTeX gerando o PDF final de forma enxuta."
 	@echo "  make figures  - Compila os diagramas Mermaid (.mmd) em PDF na pasta src/figuras/."
-	@echo "  make check    - Executa o diagnóstico de build, layout, espaçamento e conformidade ABNT."
+	@echo "  make check    - Executa o diagnóstico de build, layout, geometria do PDF e ABNT."
+	@echo "  make preview  - Renderiza páginas do PDF em PNG (ex: make preview PAGES=14-16 ou ARGS=--issues)."
+	@echo "  make slides   - Compila os slides Beamer da banca em slides/build/apresentacao.pdf."
 	@echo "  make portal   - Gera o portal web interativo dinâmico em public/ (para GitHub Pages)."
 	@echo "  make diff     - Exibe word-diff por seção e gera relatório visual (--html / --md)."
 	@echo "  make add-ref  - Importa referência ABNT via DOI para src/referencias.bib (DOI=...)."

@@ -5,12 +5,16 @@ set SRC_DIR=src
 set MAIN_FILE=main.tex
 set BUILD_DIR=build
 set FIGURES_DIR=%SRC_DIR%\figuras
+set SLIDES_DIR=slides
+set SLIDES_FILE=apresentacao.tex
 
 if "%1"=="" goto build
 if "%1"=="build" goto build
 if "%1"=="figures" goto figures
 if "%1"=="check" goto check
 if "%1"=="verify" goto check
+if "%1"=="preview" goto preview
+if "%1"=="slides" goto slides
 if "%1"=="portal" goto portal
 if "%1"=="diff" goto diff
 if "%1"=="add-ref" goto addref
@@ -98,6 +102,27 @@ if %ERRORLEVEL% NEQ 0 (
 node scripts\check.js %2 %3 %4 %5 %6
 goto :eof
 
+:preview
+where node >nul 2>nul
+if %ERRORLEVEL% NEQ 0 (
+    echo [AVISO] Node.js nao foi encontrado no sistema.
+    echo Para gerar previas em PNG, instale o Node.js: https://nodejs.org/
+    exit /b 1
+)
+node scripts\preview_page.js %2 %3 %4 %5 %6
+goto :eof
+
+:slides
+echo Compilando slides da banca (%SLIDES_DIR%\%SLIDES_FILE%)...
+set max_print_line=10000
+latexmk -pdf -silent -interaction=nonstopmode -outdir=%BUILD_DIR% -cd %SLIDES_DIR%\%SLIDES_FILE%
+if %ERRORLEVEL% NEQ 0 (
+    echo [ERRO] Falha na compilacao dos slides. Verifique %SLIDES_DIR%\%BUILD_DIR%\apresentacao.log.
+    exit /b %ERRORLEVEL%
+)
+echo Slides gerados com sucesso em: %SLIDES_DIR%\%BUILD_DIR%\apresentacao.pdf
+goto :eof
+
 :portal
 where node >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
@@ -158,7 +183,9 @@ echo  Opcoes do script make.bat:
 echo ========================================================
 echo   .\make.bat build    - Compila o LaTeX gerando o PDF final de forma enxuta.
 echo   .\make.bat figures  - Compila os diagramas .mmd em PDF em src\figuras\
-echo   .\make.bat check    - Executa o diagnostico de build, layout, espacamento e ABNT.
+echo   .\make.bat check    - Executa o diagnostico de build, layout, geometria do PDF e ABNT.
+echo   .\make.bat preview  - Renderiza paginas do PDF em PNG (ex: .\make.bat preview 14 ou --issues).
+echo   .\make.bat slides   - Compila os slides Beamer da banca em slides\build\apresentacao.pdf.
 echo   .\make.bat portal   - Gera o portal web interativo em public\ (GitHub Pages).
 echo   .\make.bat diff     - Exibe word-diff por secao e gera relatorio visual (--html / --md).
 echo   .\make.bat add-ref  - Importa referencia ABNT via DOI para src\referencias.bib.

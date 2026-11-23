@@ -64,8 +64,10 @@ Sempre utilize o Makefile (ou `make.bat` no Windows). **Nunca execute comandos m
 | :--- | :--- | :--- |
 | `.\make.bat build` | `make build` | Compilação enxuta do PDF (silencia ruídos de fontes e pacotes). |
 | `.\make.bat figures` | `make figures` | Converte diagramas `.mmd` em `src/figuras/` para PDF vetorial recortado. |
-| `.\make.bat check` | `make check` | Auditoria inteligente: detecta erros, `Underfull \vbox` (espaços verticais excessivos de tabelas/figuras), `Overfull \hbox` e linter ABNT. |
+| `.\make.bat check` | `make check` | Auditoria inteligente: erros, `Underfull \vbox`, `Overfull \hbox`, geometria real do PDF (Poppler/PyMuPDF, `--ink` para tinta) e linter ABNT. |
 | `.\make.bat check --json` | `make check --json` | Retorna o status de auditoria em JSON compacto (ideal para consumo por IAs). |
+| `.\make.bat preview <pag>` | `make preview PAGES=<pag>` | Renderiza páginas do PDF em PNG (`src/build/previews/`) — suporta intervalos (`14-16`), `--issues` e `--slides`. |
+| `.\make.bat slides` | `make slides` | Compila os slides Beamer 16:9 da defesa (`slides/apresentacao.tex`) reutilizando `src/referencias.bib` e `src/figuras/`. |
 | `.\make.bat portal` | `make portal` | Gera o portal web dinâmico com PDF embutido e sumário para o GitHub Pages. |
 | `.\make.bat diff` | `make diff` | Exibe word-diff por seção (`diff=tex`) e gera relatório visual Antes/Depois (`--html` / `--md`). |
 | `.\make.bat add-ref <DOI>` | `make add-ref DOI=<DOI>` | Consulta CrossRef/DataCite e adiciona a referência formatada em `src/referencias.bib`. |

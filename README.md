@@ -143,7 +143,9 @@ Incluímos suporte completo multiplataforma via `Makefile` (Linux/macOS/Git Bash
 | :--- | :--- | :--- |
 | `.\make.bat build` | `make build` | **Compilação padrão:** Converte o LaTeX em PDF de forma enxuta resolvendo referências BibLaTeX/ABNT. Não requer Node.js. |
 | `.\make.bat figures` | `make figures` | **Compila diagramas:** Varre `src/figuras/*.mmd` e compila para PDF vetorial recortado (`pdfcrop`). *(Requer Node.js)* |
-| `.\make.bat check` | `make check` | **Diagnóstico inteligente & ABNT:** Analisa erros de compilação, espaçamentos anormais entre tabelas/textos (`Underfull \vbox`), vazamento de margem (`Overfull \hbox`), citações órfãs e linter de redação ABNT. *(Requer Node.js)* |
+| `.\make.bat check` | `make check` | **Diagnóstico inteligente & ABNT:** Analisa compilação, `Underfull \vbox`, `Overfull \hbox`, **geometria real do PDF** (margens e parágrafos partidos via Poppler/MiKTeX ou PyMuPDF), citações órfãs e redação ABNT. *(Requer Node.js)* |
+| `.\make.bat preview 14` | `make preview PAGES=14` | **Prévia Visual em PNG:** Renderiza páginas específicas (ex: `14-16`) ou todas as páginas com alertas (`--issues`) em `src/build/previews/` via `pdftoppm`/Ghostscript/PyMuPDF. *(Requer Node.js)* |
+| `.\make.bat slides` | `make slides` | **Slides da Banca (Beamer 16:9):** Compila `slides/apresentacao.tex` no tema institucional do IFS reutilizando o mesmo `src/referencias.bib` e `src/figuras/`. |
 | `.\make.bat portal` | `make portal` | **Portal Web Acadêmico:** Extrai dados 100% reais do LaTeX/PDF e gera a vitrine web com sumário dinâmico em `public/index.html` para o GitHub Pages. *(Requer Node.js)* |
 | `.\make.bat diff` | `make diff` | **Revisão Visual de Mudanças:** Mostra word-diff por `\section`, alertas de citações/números e gera comparador HTML Antes/Depois (`--html`). *(Requer Node.js + Git)* |
 | `.\make.bat add-ref <DOI>` | `make add-ref DOI=<DOI>` | **Importador via DOI:** Consulta CrossRef/DataCite e cadastra a referência formatada (ABNT) em `src/referencias.bib`. *(Requer Node.js)* |
