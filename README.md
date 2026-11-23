@@ -143,6 +143,8 @@ Incluímos suporte completo multiplataforma via `Makefile` (Linux/macOS/Git Bash
 | `.\make.bat figures` | `make figures` | **Compila diagramas:** Varre `src/figuras/*.mmd` e compila para PDF vetorial recortado (`pdfcrop`). *(Requer Node.js)* |
 | `.\make.bat check` | `make check` | **Diagnóstico inteligente & ABNT:** Analisa erros de compilação, espaçamentos anormais entre tabelas/textos (`Underfull \vbox`), vazamento de margem (`Overfull \hbox`), citações órfãs e linter de redação ABNT. *(Requer Node.js)* |
 | `.\make.bat portal` | `make portal` | **Portal Web Acadêmico:** Extrai dados 100% reais do LaTeX/PDF e gera a vitrine web com sumário dinâmico em `public/index.html` para o GitHub Pages. *(Requer Node.js)* |
+| `.\make.bat diff` | `make diff` | **Revisão Visual de Mudanças:** Mostra word-diff por `\section`, alertas de citações/números e gera comparador HTML Antes/Depois (`--html`). *(Requer Node.js + Git)* |
+| `.\make.bat add-ref <DOI>` | `make add-ref DOI=<DOI>` | **Importador via DOI:** Consulta CrossRef/DataCite e cadastra a referência formatada (ABNT) em `src/referencias.bib`. *(Requer Node.js)* |
 | `.\make.bat update` | `make update` | **Sincronização do Template:** Conecta ao repositório oficial e atualiza automações e regras ABNT preservando seu texto. *(Requer Node.js)* |
 | `.\make.bat all` | `make all` | **Pipeline completo:** Executa `figures` → `build` → `clean` em sequência. |
 | `.\make.bat clean` | `make clean` | **Limpeza leve:** Remove arquivos intermediários (`.aux`, `.log`, `.bbl`, etc.), mantendo o PDF final. |

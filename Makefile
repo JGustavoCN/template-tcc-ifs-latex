@@ -28,7 +28,7 @@ CLEAN_CMD = latexmk -c -outdir=$(BUILD_DIR) -cd $(SRC_DIR)/$(MAIN_FILE)
 CLEAN_ALL_CMD = latexmk -C -outdir=$(BUILD_DIR) -cd $(SRC_DIR)/$(MAIN_FILE)
 
 # Targets principais
-.PHONY: all build figures check verify portal update clean cleanall help check-node
+.PHONY: all build figures check verify portal diff add-ref update clean cleanall help check-node
 
 all: figures build clean
 
@@ -61,6 +61,12 @@ verify: check
 portal:
 	@node scripts/build_portal.js
 
+diff:
+	@node scripts/diff_report.js $(ARGS)
+
+add-ref:
+	@node scripts/add_doi.js $(DOI) $(ARGS)
+
 update:
 	@node scripts/update_template.js $(ARGS)
 
@@ -82,6 +88,8 @@ help:
 	@echo "  make figures  - Compila os diagramas Mermaid (.mmd) em PDF na pasta src/figuras/."
 	@echo "  make check    - Executa o diagnóstico de build, layout, espaçamento e conformidade ABNT."
 	@echo "  make portal   - Gera o portal web interativo dinâmico em public/ (para GitHub Pages)."
+	@echo "  make diff     - Exibe word-diff por seção e gera relatório visual (--html / --md)."
+	@echo "  make add-ref  - Importa referência ABNT via DOI para src/referencias.bib (DOI=...)."
 	@echo "  make update   - Verifica e sincroniza melhorias do repositório oficial do template."
 	@echo "  make all      - Executa figures -> build -> clean (pipeline completo)."
 	@echo "  make clean    - Remove arquivos temporários e auxiliares (.aux, .log, etc)."

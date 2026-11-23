@@ -12,6 +12,8 @@ if "%1"=="figures" goto figures
 if "%1"=="check" goto check
 if "%1"=="verify" goto check
 if "%1"=="portal" goto portal
+if "%1"=="diff" goto diff
+if "%1"=="add-ref" goto addref
 if "%1"=="update" goto update
 if "%1"=="all" goto all
 if "%1"=="clean" goto clean
@@ -106,6 +108,26 @@ if %ERRORLEVEL% NEQ 0 (
 node scripts\build_portal.js
 goto :eof
 
+:diff
+where node >nul 2>nul
+if %ERRORLEVEL% NEQ 0 (
+    echo [AVISO] Node.js nao foi encontrado no sistema.
+    echo Para gerar o relatorio de mudancas, instale o Node.js: https://nodejs.org/
+    exit /b 1
+)
+node scripts\diff_report.js %2 %3 %4 %5 %6
+goto :eof
+
+:addref
+where node >nul 2>nul
+if %ERRORLEVEL% NEQ 0 (
+    echo [AVISO] Node.js nao foi encontrado no sistema.
+    echo Para importar referencias via DOI, instale o Node.js: https://nodejs.org/
+    exit /b 1
+)
+node scripts\add_doi.js %2 %3 %4 %5 %6
+goto :eof
+
 :update
 where node >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
@@ -138,6 +160,8 @@ echo   .\make.bat build    - Compila o LaTeX gerando o PDF final de forma enxuta
 echo   .\make.bat figures  - Compila os diagramas .mmd em PDF em src\figuras\
 echo   .\make.bat check    - Executa o diagnostico de build, layout, espacamento e ABNT.
 echo   .\make.bat portal   - Gera o portal web interativo em public\ (GitHub Pages).
+echo   .\make.bat diff     - Exibe word-diff por secao e gera relatorio visual (--html / --md).
+echo   .\make.bat add-ref  - Importa referencia ABNT via DOI para src\referencias.bib.
 echo   .\make.bat update   - Verifica e sincroniza melhorias do template oficial.
 echo   .\make.bat all      - Executa figures -^> build -^> clean (pipeline completo)
 echo   .\make.bat clean    - Remove arquivos temporarios (.aux, .log, .bbl, etc).

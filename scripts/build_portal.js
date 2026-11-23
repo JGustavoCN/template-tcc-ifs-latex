@@ -16,6 +16,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const { countProjectWords } = require('./lib/word_counter');
 
 const rootDir = path.resolve(__dirname, '..');
 const srcDir = path.join(rootDir, 'src');
@@ -491,6 +492,7 @@ function buildPortal() {
   const toc = parseToc();
   const stats = parsePdfStats();
   const refs = parseReferencesStats();
+  const words = countProjectWords(rootDir);
   const repo = getRepoMetadata();
 
   const portalData = {
@@ -499,6 +501,7 @@ function buildPortal() {
     toc,
     stats,
     refs,
+    words,
     repo
   };
 
@@ -558,7 +561,9 @@ function buildPortal() {
     .replace(/\{\{COMMIT_SHA\}\}/g, repo.commitSha)
     .replace(/\{\{REPO_URL\}\}/g, repo.repoUrl)
     .replace(/\{\{TOTAL_REFS_BIB\}\}/g, refs.totalBibEntries.toString())
-    .replace(/\{\{TOTAL_REFS_CITADAS\}\}/g, refs.totalCitedEntries.toString());
+    .replace(/\{\{TOTAL_REFS_CITADAS\}\}/g, refs.totalCitedEntries.toString())
+    .replace(/\{\{PALAVRAS_TEXTUAIS\}\}/g, words.textualWords.toLocaleString('pt-BR'))
+    .replace(/\{\{TEMPO_LEITURA\}\}/g, words.readingTimeFormatted);
 
   // Injeção do payload JSON completo para o Drawer interativo
   const jsonPayload = `<script id="tcc-portal-data" type="application/json">${JSON.stringify(portalData)}</script>`;
@@ -575,6 +580,7 @@ function buildPortal() {
   console.log(`     🎓 Orientador:   ${meta.orientador}`);
   console.log(`     🏛️  Instituição:  ${meta.instituicaoCompleta}`);
   console.log(`     📑 Páginas:      ${stats.pages} (${stats.sizeFormatted})`);
+  console.log(`     ✍️  Extensão:     ${words.textualWords.toLocaleString('pt-BR')} palavras textuais (${words.readingTimeFormatted})`);
   console.log(`     📚 Referências:  ${refs.totalCitedEntries} citadas / ${refs.totalBibEntries} cadastradas`);
   console.log(`     📌 Sumário:      ${toc.length} tópicos extraídos (incluindo Apêndices e Anexos)`);
   console.log(`     ⏰ Atualizado:   ${repo.buildTimestamp}`);

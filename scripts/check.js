@@ -31,6 +31,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const LayoutInspector = require('./lib/layout_inspector');
+const { countProjectWords } = require('./lib/word_counter');
 
 // Suporte a cores ANSI
 const isColorSupported = process.stdout.isTTY && !process.env.NO_COLOR && !process.argv.includes('--no-color');
@@ -59,8 +60,12 @@ class TCCChecker {
         warningsCount: 0,
         suggestionsCount: 0,
         pages: null,
-        pdfSizeBytes: null
+        pdfSizeBytes: null,
+        textualWords: 0,
+        readingTimeMinutes: 0,
+        readingTimeFormatted: '< 1 min'
       },
+      wordStats: null,
       buildDiagnostics: {
         hasBuildFiles: false,
         autoBuilt: false,
@@ -1022,6 +1027,13 @@ class TCCChecker {
 
     // Auditoria estática prévia de citações (cruza chaves dos .tex com src/referencias.bib)
     this.checkStaticCitations();
+
+    // Contagem inteligente de palavras textuais e estimativa de tempo de leitura
+    const wordStats = countProjectWords(this.rootDir);
+    this.report.wordStats = wordStats;
+    this.report.summary.textualWords = wordStats.textualWords;
+    this.report.summary.readingTimeMinutes = wordStats.readingTimeMinutes;
+    this.report.summary.readingTimeFormatted = wordStats.readingTimeFormatted;
   }
 
   checkStaticCitations() {
@@ -1338,6 +1350,12 @@ class TCCChecker {
     // Painel de Resumo Final
     this.printSection('Resumo Geral');
     const s = this.report.summary;
+    if (this.report.wordStats) {
+      const ws = this.report.wordStats;
+      const formattedWords = ws.textualWords.toLocaleString('pt-BR');
+      const appNote = ws.appendixWords > 0 ? ` (+${ws.appendixWords.toLocaleString('pt-BR')} em apêndices/anexos)` : '';
+      console.log(`  Extensão Textual:    ${BOLD}${formattedWords} palavras${RESET}${appNote} | Leitura: ${CYAN}${ws.readingTimeFormatted}${RESET}`);
+    }
     console.log(`  Total de Erros:      ${s.errorsCount > 0 ? RED + s.errorsCount : GREEN + '0'}${RESET}`);
     console.log(`  Total de Avisos:     ${s.warningsCount > 0 ? YELLOW + s.warningsCount : GREEN + '0'}${RESET}`);
     console.log(`  Sugestões de Estilo: ${CYAN + s.suggestionsCount + RESET}`);

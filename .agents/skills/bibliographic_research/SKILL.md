@@ -28,6 +28,14 @@ Quando for necessário embasar novos conceitos ou expandir o referencial teóric
 - **Evitar:** Artigos de blogs informais, fóruns sem curadoria ou fontes sem autoria verificável para conceitos fundamentais.
 
 ### 3. Padrão de Cadastro no `src/referencias.bib`
+
+> **💡 Atalho Automatizado via DOI (Preferencial):** Sempre que a obra possuir DOI (IEEE, ACM, Springer, Elsevier, SciELO, arXiv/Zenodo), utilize o importador oficial para evitar erros de digitação:
+> ```bash
+> .\make.bat add-ref 10.1145/3611643.3616281          # Windows
+> make add-ref DOI=10.1145/3611643.3616281            # Linux / macOS
+> node scripts/add_doi.js <DOI> --dry-run             # Apenas pré-visualizar
+> ```
+
 Toda nova entrada no `.bib` deve conter todos os campos obrigatórios da ABNT:
 
 - **Artigo em Periódico (`@article`):**

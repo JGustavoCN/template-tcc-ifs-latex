@@ -1,0 +1,31 @@
+# ==============================================================================
+# .gitattributes — Configuração Otimizada de Diff e Quebras de Linha para LaTeX
+# ==============================================================================
+
+# Ativa o driver nativo do Git para LaTeX:
+# Exibe automaticamente o \chapter / \section / \subsection no cabeçalho do git diff!
+*.tex text diff=tex
+
+# Arquivos textuais e scripts do projeto
+*.bib text
+*.mmd text
+*.md text
+*.js text eol=lf
+*.json text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+Makefile text eol=lf
+
+# Scripts Windows exigem CRLF para execução estável no cmd.exe e PowerShell
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Artefatos binários (impede corrupção por merge textual em figuras e PDFs)
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.zip binary

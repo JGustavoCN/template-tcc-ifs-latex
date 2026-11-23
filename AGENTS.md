@@ -67,6 +67,8 @@ Sempre utilize o Makefile (ou `make.bat` no Windows). **Nunca execute comandos m
 | `.\make.bat check` | `make check` | Auditoria inteligente: detecta erros, `Underfull \vbox` (espaços verticais excessivos de tabelas/figuras), `Overfull \hbox` e linter ABNT. |
 | `.\make.bat check --json` | `make check --json` | Retorna o status de auditoria em JSON compacto (ideal para consumo por IAs). |
 | `.\make.bat portal` | `make portal` | Gera o portal web dinâmico com PDF embutido e sumário para o GitHub Pages. |
+| `.\make.bat diff` | `make diff` | Exibe word-diff por seção (`diff=tex`) e gera relatório visual Antes/Depois (`--html` / `--md`). |
+| `.\make.bat add-ref <DOI>` | `make add-ref DOI=<DOI>` | Consulta CrossRef/DataCite e adiciona a referência formatada em `src/referencias.bib`. |
 | `.\make.bat all` | `make all` | Pipeline completo: `figures` -> `build` -> `clean`. |
 | `.\make.bat clean` | `make clean` | Remove arquivos intermediários (`.aux`, `.log`, etc.), preservando o PDF. |
 | `.\make.bat cleanall` | `make cleanall` | Remove todos os arquivos gerados (incluindo o PDF final). |
@@ -101,3 +103,4 @@ Sempre que surgirem dúvidas arquiteturais ou necessidade de expansão da infrae
   7. `tcc_bridge_workflow` – Pipeline de sincronização ponta a ponta com Google Docs e Drive via MCP.
   8. `health_check` – Auditoria de ambiente e conectividade MCP antes de deploys.
   9. `iteration_report` – Relatório executivo de fechamento de ciclos de revisão.
+  10. `change_review` – Revisão visual Antes vs. Depois (Carrossel, HTML via `make diff` e Mermaid) antes de alterações semânticas.
