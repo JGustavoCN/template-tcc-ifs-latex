@@ -460,15 +460,86 @@ function getRepoMetadata() {
     minute: '2-digit'
   });
 
+  const [owner, repoShort] = repo.split('/');
+  const ownerLower = (owner || 'usuario').toLowerCase();
+  const defaultPagesUrl = repoShort && repoShort.toLowerCase() === `${ownerLower}.github.io`
+    ? `https://${ownerLower}.github.io/`
+    : `https://${ownerLower}.github.io/${repoShort || ''}/`;
+  const pagesUrl = (process.env.PAGES_URL || defaultPagesUrl).replace(/\/?$/, '/');
+
   return {
     repoUrl: `https://github.com/${repo}`,
     repoName: repo,
+    pagesUrl,
     commitSha,
     branch,
     runNumber,
     buildDate: dateFormatted,
     buildTime: timeFormatted,
     buildTimestamp: `${dateFormatted} às ${timeFormatted} (Horário de Brasília)`
+  };
+}
+
+/**
+ * Formata nome completo do autor para entrada ABNT (SOBRENOME, Prenomes),
+ * preservando agnomes brasileiros (Júnior, Filho, Neto, Sobrinho).
+ */
+function formatAbntAuthor(fullName) {
+  const parts = String(fullName || 'Autor').trim().split(/\s+/).filter(Boolean);
+  if (parts.length <= 1) return parts[0] ? parts[0].toUpperCase() : 'AUTOR';
+
+  const agnomes = new Set(['junior', 'júnior', 'filho', 'neto', 'sobrinho', 'segundo', 'terceiro']);
+  const last = parts[parts.length - 1];
+  if (parts.length >= 3 && agnomes.has(last.toLowerCase())) {
+    const surname = `${parts[parts.length - 2]} ${last}`.toUpperCase();
+    const given = parts.slice(0, -2).join(' ');
+    return `${surname}, ${given}`;
+  }
+
+  const surname = last.toUpperCase();
+  const given = parts.slice(0, -1).join(' ');
+  return `${surname}, ${given}`;
+}
+
+/**
+ * Gera citações prontas em ABNT NBR 6023 e BibTeX (compatível com biblatex-abnt).
+ */
+function generateCitationData(meta, stats, repo) {
+  const abntAuthor = formatAbntAuthor(meta.autor);
+  const city = (meta.local || 'Lagarto').split(/\s*[-–—]\s*/)[0].trim();
+  const year = meta.data || new Date().getFullYear().toString();
+  const pagesPart = stats.pages > 0 ? `${stats.pages} f. ` : '';
+  const tipo = meta.tipotrabalho || 'Trabalho de Conclusão de Curso';
+
+  const abnt = `${abntAuthor}. ${meta.titulo}. ${year}. ${pagesPart}${tipo} (${meta.cursoNome}) – ${meta.instituicaoNome}, ${meta.campusNome}, ${city}, ${year}. Disponível em: ${repo.pagesUrl}.`;
+
+  // Chave BibTeX limpa: sobrenomeAno
+  const authorParts = String(meta.autor || 'autor').trim().split(/\s+/).filter(Boolean);
+  const rawLast = authorParts[authorParts.length - 1] || 'autor';
+  const cleanKeySurname = rawLast
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '') || 'autor';
+  const bibKey = `${cleanKeySurname}${year.replace(/[^0-9]/g, '')}`;
+
+  const bibtexLines = [
+    `@monography{${bibKey},`,
+    `    author = {${meta.autor}},`,
+    `    title = {${meta.titulo}},`,
+    `    type = {${tipo} (${meta.cursoNome})},`,
+    `    school = {${meta.instituicaoNome}, ${meta.campusNome}},`,
+    `    address = {${city}},`,
+    `    year = {${year}},`,
+    ...(stats.pages > 0 ? [`    pages = {${stats.pages}},`] : []),
+    `    url = {${repo.pagesUrl}}`,
+    `}`
+  ];
+
+  return {
+    bibKey,
+    abnt,
+    bibtex: bibtexLines.join('\n')
   };
 }
 
@@ -494,6 +565,7 @@ function buildPortal() {
   const refs = parseReferencesStats();
   const words = countProjectWords(rootDir);
   const repo = getRepoMetadata();
+  const citation = generateCitationData(meta, stats, repo);
 
   const portalData = {
     meta,
@@ -502,7 +574,8 @@ function buildPortal() {
     stats,
     refs,
     words,
-    repo
+    repo,
+    citation
   };
 
   // 2. Preparação do diretório de saída (public/)
@@ -521,13 +594,25 @@ function buildPortal() {
     }
   }
 
-  // Copia o logo_ifs.png para public/logo_ifs.png
+  // Copia o logo_ifs.png para public/logo_ifs.png (usado como fallback de Open Graph PNG)
   const logoIfsPath = path.join(srcDir, 'logo_ifs.png');
   if (fs.existsSync(logoIfsPath)) {
     try {
       fs.copyFileSync(logoIfsPath, path.join(outputDir, 'logo_ifs.png'));
     } catch (e) {}
   }
+
+  // Se houver capa social personalizada web/og-cover.png, prioriza no Open Graph
+  let ogImageFile = 'logo_ifs.png';
+  const customOgPath = path.join(webDir, 'og-cover.png');
+  if (fs.existsSync(customOgPath)) {
+    try {
+      fs.copyFileSync(customOgPath, path.join(outputDir, 'og-cover.png'));
+      ogImageFile = 'og-cover.png';
+    } catch (e) {}
+  }
+  const ogImageUrl = `${repo.pagesUrl}${ogImageFile}`;
+  const ogDescription = `${meta.tipotrabalho} de ${meta.autor} (${meta.cursoNome} – ${meta.instituicaoNome}, ${meta.campusNome}, ${meta.data}). ${stats.pages} páginas, ${words.textualWords.toLocaleString('pt-BR')} palavras.`;
 
   // Copia o PDF gerado para public/main.pdf
   if (stats.pdfPath && fs.existsSync(stats.pdfPath)) {
@@ -560,6 +645,9 @@ function buildPortal() {
     .replace(/\{\{DATA_COMPILACAO_CURTA\}\}/g, repo.buildDate)
     .replace(/\{\{COMMIT_SHA\}\}/g, repo.commitSha)
     .replace(/\{\{REPO_URL\}\}/g, repo.repoUrl)
+    .replace(/\{\{PAGES_URL\}\}/g, repo.pagesUrl)
+    .replace(/\{\{OG_IMAGE_URL\}\}/g, ogImageUrl)
+    .replace(/\{\{OG_DESCRIPTION\}\}/g, ogDescription.replace(/"/g, '&quot;'))
     .replace(/\{\{TOTAL_REFS_BIB\}\}/g, refs.totalBibEntries.toString())
     .replace(/\{\{TOTAL_REFS_CITADAS\}\}/g, refs.totalCitedEntries.toString())
     .replace(/\{\{PALAVRAS_TEXTUAIS\}\}/g, words.textualWords.toLocaleString('pt-BR'))

@@ -4,7 +4,25 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{TITULO}} | {{CAMPUS_NOME}}</title>
-  <meta name="description" content="Trabalho de Conclusão de Curso: {{TITULO}} - {{AUTOR}} ({{INSTITUICAO_COMPLETA}}).">
+  <meta name="description" content="{{OG_DESCRIPTION}}">
+  <meta name="author" content="{{AUTOR}}">
+  <link rel="canonical" href="{{PAGES_URL}}">
+
+  <!-- Open Graph / WhatsApp / Telegram / LinkedIn -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:site_name" content="{{INSTITUICAO_NOME}} – {{CAMPUS_NOME}}">
+  <meta property="og:url" content="{{PAGES_URL}}">
+  <meta property="og:title" content="{{TITULO}}">
+  <meta property="og:description" content="{{OG_DESCRIPTION}}">
+  <meta property="og:image" content="{{OG_IMAGE_URL}}">
+  <meta property="article:author" content="{{AUTOR}}">
+
+  <!-- Twitter Cards -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="{{TITULO}}">
+  <meta name="twitter:description" content="{{OG_DESCRIPTION}}">
+  <meta name="twitter:image" content="{{OG_IMAGE_URL}}">
   
   <!-- Favicon com a Logo Oficial do Projeto -->
   <link rel="icon" type="image/svg+xml" href="logo.svg">
@@ -470,6 +488,185 @@
       transform: translateY(0);
     }
 
+    /* Busca Dinâmica no Sumário */
+    .toc-search-wrap {
+      position: relative;
+      margin-bottom: 0.75rem;
+    }
+
+    .toc-search-icon {
+      position: absolute;
+      left: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-dim);
+      pointer-events: none;
+    }
+
+    .toc-search-input {
+      width: 100%;
+      padding: 0.55rem 2rem 0.55rem 2.2rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-card);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      font-size: 0.82rem;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .toc-search-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+
+    .toc-search-clear {
+      position: absolute;
+      right: 0.5rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 1rem;
+      line-height: 1;
+      padding: 0.2rem 0.35rem;
+      display: none;
+    }
+
+    .toc-search-clear.visible {
+      display: inline-flex;
+    }
+
+    .toc-empty {
+      padding: 1rem 0.75rem;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      text-align: center;
+      border: 1px dashed var(--border-subtle);
+      border-radius: 8px;
+    }
+
+    /* Modal Citar este Trabalho (ABNT + BibTeX) */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(5px);
+      z-index: 80;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal {
+      width: 100%;
+      max-width: 620px;
+      background: var(--bg-drawer);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+      overflow: hidden;
+      transform: translateY(10px) scale(0.98);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .modal-overlay.active .modal {
+      transform: translateY(0) scale(1);
+    }
+
+    .modal-header {
+      padding: 1.1rem 1.35rem;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-surface);
+    }
+
+    .modal-header h3 {
+      font-family: var(--font-heading);
+      font-size: 1rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text-main);
+    }
+
+    .modal-body {
+      padding: 1.25rem 1.35rem 1.35rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .cite-tabs {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .cite-tab {
+      padding: 0.45rem 0.9rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .cite-tab.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #ffffff;
+    }
+
+    .cite-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 1rem;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      color: var(--text-main);
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+
+    .cite-box.mono {
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      font-size: 0.8rem;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .cite-hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
     /* Mobile Fallback */
     .mobile-fallback {
       display: none;
@@ -532,6 +729,15 @@
           <line x1="3" y1="18" x2="21" y2="18"></line>
         </svg>
         <span>Sumário & Detalhes</span>
+      </button>
+
+      <!-- Botão Citar este Trabalho (ABNT + BibTeX) -->
+      <button class="btn btn-secondary" id="citeBtn" title="Citar este trabalho em ABNT ou BibTeX">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"></path>
+          <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"></path>
+        </svg>
+        <span>Citar</span>
       </button>
 
       <!-- Botão Compartilhar Inteligente -->
@@ -681,12 +887,52 @@
           <span>Sumário do Documento</span>
           <span class="toc-badge" id="tocBadge">Carregando...</span>
         </div>
+        <div class="toc-search-wrap">
+          <svg class="toc-search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="search" id="tocSearchInput" class="toc-search-input" placeholder="Buscar seção, capítulo ou apêndice..." autocomplete="off" />
+          <button type="button" id="tocSearchClear" class="toc-search-clear" title="Limpar busca">&times;</button>
+        </div>
         <ul class="toc-list" id="tocList">
           <!-- Injetado dinamicamente via JavaScript -->
         </ul>
       </div>
     </div>
   </aside>
+
+  <!-- Modal Citar este Trabalho (ABNT NBR 6023 e BibTeX) -->
+  <div class="modal-overlay" id="citeModalOverlay" role="dialog" aria-modal="true" aria-labelledby="citeModalTitle">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="citeModalTitle">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"></path>
+            <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"></path>
+          </svg>
+          <span>Citar este Trabalho</span>
+        </h3>
+        <button class="drawer-close" id="closeCiteModalBtn" title="Fechar">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="cite-tabs">
+          <button type="button" class="cite-tab active" data-cite-tab="abnt">ABNT (NBR 6023)</button>
+          <button type="button" class="cite-tab" data-cite-tab="bibtex">BibTeX (LaTeX)</button>
+        </div>
+        <div class="cite-box" id="citeBox">Carregando citação...</div>
+        <div class="modal-footer">
+          <span class="cite-hint" id="citeHint">Pronto para colar em referências bibliográficas.</span>
+          <button type="button" class="btn btn-primary" id="copyCiteBtn">Copiar Citação</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Toast de Notificação -->
   <div class="toast" id="toast">
@@ -748,9 +994,62 @@
     drawerOverlay.addEventListener('click', closeDrawer);
 
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && drawer.classList.contains('active')) {
-        closeDrawer();
+      if (e.key === 'Escape') {
+        if (citeModalOverlay.classList.contains('active')) closeCiteModal();
+        else if (drawer.classList.contains('active')) closeDrawer();
       }
+    });
+
+    // Controle do Modal "Citar este Trabalho"
+    const citeBtn = document.getElementById('citeBtn');
+    const citeModalOverlay = document.getElementById('citeModalOverlay');
+    const closeCiteModalBtn = document.getElementById('closeCiteModalBtn');
+    const citeBox = document.getElementById('citeBox');
+    const citeHint = document.getElementById('citeHint');
+    const copyCiteBtn = document.getElementById('copyCiteBtn');
+    const citeTabBtns = document.querySelectorAll('.cite-tab');
+    let activeCiteTab = 'abnt';
+    let citationPayload = { abnt: '', bibtex: '' };
+
+    function renderActiveCitation() {
+      const text = activeCiteTab === 'bibtex' ? citationPayload.bibtex : citationPayload.abnt;
+      citeBox.textContent = text || 'Citação indisponível.';
+      citeBox.classList.toggle('mono', activeCiteTab === 'bibtex');
+      citeHint.textContent = activeCiteTab === 'bibtex'
+        ? 'Cole diretamente no seu arquivo referencias.bib (biblatex-abnt).'
+        : 'Formatado conforme a ABNT NBR 6023.';
+    }
+
+    function openCiteModal() {
+      renderActiveCitation();
+      citeModalOverlay.classList.add('active');
+    }
+
+    function closeCiteModal() {
+      citeModalOverlay.classList.remove('active');
+    }
+
+    citeBtn.addEventListener('click', openCiteModal);
+    closeCiteModalBtn.addEventListener('click', closeCiteModal);
+    citeModalOverlay.addEventListener('click', (e) => {
+      if (e.target === citeModalOverlay) closeCiteModal();
+    });
+
+    citeTabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        activeCiteTab = btn.dataset.citeTab;
+        citeTabBtns.forEach(b => b.classList.toggle('active', b === btn));
+        renderActiveCitation();
+      });
+    });
+
+    copyCiteBtn.addEventListener('click', () => {
+      const text = citeBox.textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        showToast(activeCiteTab === 'bibtex' ? 'BibTeX copiado para a área de transferência!' : 'Referência ABNT copiada!');
+      }).catch(() => {
+        showToast('Não foi possível copiar a citação.');
+      });
     });
 
     // Toast de Feedback
@@ -790,23 +1089,46 @@
       });
     });
 
-    // Renderização Dinâmica do Sumário no Drawer
+    // Renderização Dinâmica e Busca do Sumário no Drawer
     const pdfFrame = document.getElementById('pdfFrame');
     const dataElement = document.getElementById('tcc-portal-data');
+    const tocSearchInput = document.getElementById('tocSearchInput');
+    const tocSearchClear = document.getElementById('tocSearchClear');
+
+    function normalizeSearch(str) {
+      return String(str || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+    }
 
     if (dataElement) {
       try {
         const portalData = JSON.parse(dataElement.textContent);
+        if (portalData.citation) {
+          citationPayload = portalData.citation;
+        }
+
         const tocList = document.getElementById('tocList');
         const tocBadge = document.getElementById('tocBadge');
+        const allItems = Array.isArray(portalData.toc) ? portalData.toc : [];
+        const totalNavigable = allItems.filter(it => it.type !== 'part').length;
 
-        if (portalData.toc && portalData.toc.length > 0) {
+        function renderToc(query = '') {
           tocList.innerHTML = '';
-          tocBadge.textContent = `${portalData.toc.length} tópicos`;
+          const normQuery = normalizeSearch(query.trim());
 
-          portalData.toc.forEach(item => {
+          if (allItems.length === 0) {
+            tocBadge.textContent = 'Sem tópicos';
+            return;
+          }
+
+          let visibleCount = 0;
+
+          allItems.forEach(item => {
             if (item.type === 'part') {
-              // Divisórias como Apêndices ou Anexos
+              // Oculta divisórias quando houver filtro ativo para manter a lista limpa
+              if (normQuery) return;
               const partLi = document.createElement('li');
               partLi.style.padding = '0.75rem 0.5rem 0.25rem';
               partLi.style.fontSize = '0.72rem';
@@ -822,11 +1144,14 @@
               return;
             }
 
+            const prefix = item.number ? `${item.number} ` : '';
+            const searchable = normalizeSearch(`${prefix}${item.title} p. ${item.page}`);
+            if (normQuery && !searchable.includes(normQuery)) return;
+
+            visibleCount++;
             const li = document.createElement('li');
             const a = document.createElement('a');
             a.className = `toc-item ${item.type}`;
-            
-            const prefix = item.number ? `${item.number} ` : '';
             a.innerHTML = `
               <span>${prefix}${item.title}</span>
               <span class="toc-page">p. ${item.page}</span>
@@ -834,18 +1159,41 @@
 
             a.addEventListener('click', (e) => {
               e.preventDefault();
-              // Navega o visualizador diretamente para a página selecionada
               pdfFrame.src = `main.pdf#page=${item.page}&zoom=page-width`;
-              // Fecha o Drawer suavemente para dar visão total ao PDF
               closeDrawer();
             });
 
             li.appendChild(a);
             tocList.appendChild(li);
           });
-        } else {
-          tocBadge.textContent = 'Sem tópicos';
+
+          if (normQuery) {
+            tocBadge.textContent = `${visibleCount} de ${totalNavigable} tópicos`;
+            if (visibleCount === 0) {
+              const emptyLi = document.createElement('li');
+              emptyLi.className = 'toc-empty';
+              emptyLi.textContent = `Nenhum tópico encontrado para "${query.trim()}".`;
+              tocList.appendChild(emptyLi);
+            }
+          } else {
+            tocBadge.textContent = `${allItems.length} tópicos`;
+          }
         }
+
+        renderToc();
+
+        tocSearchInput.addEventListener('input', (e) => {
+          const val = e.target.value;
+          tocSearchClear.classList.toggle('visible', val.length > 0);
+          renderToc(val);
+        });
+
+        tocSearchClear.addEventListener('click', () => {
+          tocSearchInput.value = '';
+          tocSearchClear.classList.remove('visible');
+          renderToc('');
+          tocSearchInput.focus();
+        });
       } catch (e) {
         console.error('Falha ao processar dados do sumário:', e);
       }

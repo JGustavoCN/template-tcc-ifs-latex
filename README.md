@@ -26,6 +26,8 @@ Este template oferece três vias para você disponibilizar o seu TCC atualizado 
 2. **GitHub Pages (A Vitrine):** Gera um link público e fixo. A cada `git push`, o PDF é recompilado na nuvem e o link é atualizado automaticamente.
 3. **GitHub Releases:** Ideal para marcar entregas oficiais (ex: "Versão Banca", "Versão Final Corrigida").
 
+> 📋 **Reta final da defesa?** Consulte o nosso **[CHECKLIST_DEFESA.md](./CHECKLIST_DEFESA.md)** com o passo a passo completo de validação técnica, submissão à banca, Ficha Catalográfica e depósito no Repositório Institucional do IFS.
+
 Abaixo estão os passos para configurar a automação na nuvem (GitHub Pages e Releases).
 
 ---
