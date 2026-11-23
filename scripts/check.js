@@ -312,7 +312,7 @@ class TCCChecker {
     const underfullHboxes = [];
     const floatTooLarge = [];
 
-    const fileExtRegex = /\.(?:tex|lot|lof|toc|cls|sty|aux|bbl|fd|def|cfg|lbx|ldf|clo|trsl|ini|mkii)$/i;
+    const fileExtRegex = /\.(?:tex|lot|lof|loq|toc|cls|sty|aux|bbl|fd|def|cfg|lbx|ldf|clo|trsl|ini|mkii)$/i;
     const overfullRegex = /Overfull \\hbox \(([0-9.]+pt too wide)\) in (?:paragraph|alignment) at lines? (\d+)(?:--(\d+))?/;
     const underfullRegex = /Underfull \\hbox \(badness (10000)\) in (?:paragraph|alignment) at lines? (\d+)(?:--(\d+))?/;
     const floatLargeRegex = /Float too large for page by ([0-9.]+pt) on input line (\d+)/;
@@ -323,7 +323,7 @@ class TCCChecker {
         if (!node.isFile) continue;
         const fp = node.filePath;
         if (/(?:MiKTeX|texlive|texmf)/i.test(fp)) continue;
-        if (/\.(?:tex|lot|lof|toc)$/i.test(fp)) return fp;
+        if (/\.(?:tex|lot|lof|loq|toc)$/i.test(fp)) return fp;
       }
       return null;
     };
@@ -345,9 +345,9 @@ class TCCChecker {
       const norm = activeFile.replace(/\\/g, '/').replace(/^\.\//, '');
       const base = path.basename(norm).toLowerCase();
 
-      // Caso 1: Estouro na Lista de Tabelas (main.lot) ou Lista de Figuras (main.lof)
-      if (base === 'main.lot' || base === 'main.lof') {
-        const listKind = base === 'main.lot' ? 'lot' : 'lof';
+      // Caso 1: Estouro na Lista de Tabelas (main.lot), Lista de Figuras (main.lof) ou Lista de Quadros (main.loq)
+      if (base === 'main.lot' || base === 'main.lof' || base === 'main.loq') {
+        const listKind = base === 'main.lot' ? 'lot' : (base === 'main.loq' ? 'loq' : 'lof');
         const resolved = this.layoutInspector.resolveListEntry(listKind, startLine);
         if (resolved) {
           const texLoc = resolved.sourceFile
@@ -369,10 +369,10 @@ class TCCChecker {
         return {
           file: `src/build/${base}`,
           listSource: `${base}:${startLine}`,
-          element: listKind === 'lot' ? 'Lista de Tabelas' : 'Lista de Figuras',
+          element: listKind === 'lot' ? 'Lista de Tabelas' : (listKind === 'loq' ? 'Lista de Quadros' : 'Lista de Figuras'),
           lines: `${startLine}-${endLine}`,
           snippet: logSnippet,
-          suggestion: 'Use \\caption[Título curto]{Título completo} na tabela/figura correspondente.'
+          suggestion: 'Use \\caption[Título curto]{Título completo} na tabela/figura/quadro correspondente.'
         };
       }
 

@@ -14,23 +14,26 @@ A pasta `src/` contém todo o código-fonte acadêmico e as configurações inst
 src/
 ├── main.tex                  ← Arquivo mestre (estruturação do documento e inclusão de partes)
 ├── metadados.tex             ← Área do Aluno: dados do trabalho (título, autor, orientador, banca)
-├── config.tex                ← Área Restrita: configurações institucionais do IFS, pacotes e tipografia
-├── pre-textuais.tex          ← Elementos pré-textuais opcionais (dedicatória, agradecimentos, epígrafe)
+├── config.tex                ← Área Restrita: configurações institucionais do IFS, pacotes, quadro e aprovação
+├── pre-textuais.tex          ← Elementos pré-textuais (dedicatória, agradecimentos, epígrafe, resumo, abstract, siglas)
 ├── referencias.bib           ← Base única de verdade bibliográfica (BibLaTeX / NBR 6023)
 ├── logo_ifs.png              ← Brasão institucional oficial do IFS para a capa e folha de rosto
 ├── capitulos/                ← Área Livre de Conteúdo (redação dos capítulos do TCC)
 │   ├── 01-introducao.tex
-│   ├── 02-referencial.tex
-│   ├── 03-metodologia.tex
-│   ├── 04-resultados.tex
+│   ├── 02-referencial.tex    ← Exemplos de citações diretas (curta/longa) e Quadro ABNT/IBGE
+│   ├── 03-metodologia.tex    ← Exemplos de figura vetorial Mermaid e listagem de código (listings)
+│   ├── 04-resultados.tex     ← Exemplo de Tabela numérica (booktabs)
 │   └── 05-conclusao.tex
 ├── apendices/                ← Documentos elaborados pelo próprio autor
 │   └── 01-apendice-a.tex     ← Ex: Roteiros de entrevista, questionários, provas de conceito
 ├── anexos/                   ← Documentos de terceiros não elaborados pelo autor
 │   └── 01-anexo-a.tex        ← Ex: Regulamentos, pareceres de comitê de ética, certidões
-├── figuras/                  ← Diagramas e ilustrações vetoriais
-│   ├── exemplo-diagrama.mmd  ← Código declarativo Mermaid versionado no Git
-│   └── exemplo-diagrama.pdf  ← PDF vetorial compilado com corte automático (pdfcrop)
+├── figuras/                  ← Diagramas, gráficos e capturas (\graphicspath automático)
+│   ├── diagramas/            ← Diagramas Mermaid (.mmd) e PDFs vetoriais compilados
+│   ├── graficos/             ← Gráficos quantitativos vetoriais (.pdf de Python, R, Excel)
+│   ├── capturas/             ← Prints de tela e interfaces (.png / .jpg)
+│   ├── exemplo-diagrama.mmd  ← Exemplo na raiz (retrocompatível com projetos antigos)
+│   └── exemplo-diagrama.pdf
 └── build/                    ← Pasta isolada de compilação (gerada automaticamente pelo latexmk)
 ```
 

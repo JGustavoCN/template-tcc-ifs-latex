@@ -27,6 +27,7 @@ class LayoutInspector {
     // Caches preenchidos por inspectFloats() para reuso no check.js
     this.lotLineMap = new Map();
     this.lofLineMap = new Map();
+    this.loqLineMap = new Map();
     this.floatsByAnchor = new Map();
     this.floatsByNumberAndType = new Map();
   }
@@ -320,10 +321,10 @@ class LayoutInspector {
   }
 
   /**
-   * Resolve uma linha de main.lot ou main.lof para a tabela/figura e o arquivo .tex de origem.
+   * Resolve uma linha de main.lot, main.lof ou main.loq para a tabela/figura/quadro e o arquivo .tex de origem.
    */
   resolveListEntry(listKind, lineNum) {
-    const map = listKind === 'lot' ? this.lotLineMap : this.lofLineMap;
+    const map = listKind === 'lot' ? this.lotLineMap : (listKind === 'loq' ? this.loqLineMap : this.lofLineMap);
     if (!map || map.size === 0) return null;
 
     const entry = map.get(lineNum);
@@ -350,6 +351,7 @@ class LayoutInspector {
   inspectFloats() {
     this.lotLineMap = this.parseListFile('main.lot', 'Tabela');
     this.lofLineMap = this.parseListFile('main.lof', 'Figura');
+    this.loqLineMap = this.parseListFile('main.loq', 'Quadro');
     this.floatsByAnchor = new Map();
     this.floatsByNumberAndType = new Map();
 
@@ -453,6 +455,7 @@ class LayoutInspector {
 
     for (const e of this.lotLineMap.values()) registerFloat(e);
     for (const e of this.lofLineMap.values()) registerFloat(e);
+    for (const e of this.loqLineMap.values()) registerFloat(e);
 
     // Garante inclusão de flutuadores presentes no .aux mesmo se .lot/.lof não tiverem sido gerados
     for (const info of labelsByName.values()) {

@@ -56,13 +56,15 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 set HAS_MMD=0
-for %%f in ("%FIGURES_DIR%\*.mmd") do (
-    set HAS_MMD=1
-    echo Compilando %%~nxf -^> %%~nf.pdf...
-    call npx -y @mermaid-js/mermaid-cli -i "%%f" -o "%%~dpnf.pdf" -b transparent
-    where pdfcrop >nul 2>nul
-    if %ERRORLEVEL% EQU 0 (
-        call pdfcrop "%%~dpnf.pdf" "%%~dpnf.pdf" >nul 2>nul
+for %%f in ("%FIGURES_DIR%\*.mmd" "%FIGURES_DIR%\diagramas\*.mmd") do (
+    if exist "%%f" (
+        set HAS_MMD=1
+        echo Compilando %%~nxf -^> %%~nf.pdf...
+        call npx -y @mermaid-js/mermaid-cli -i "%%f" -o "%%~dpnf.pdf" -b transparent
+        where pdfcrop >nul 2>nul
+        if %ERRORLEVEL% EQU 0 (
+            call pdfcrop "%%~dpnf.pdf" "%%~dpnf.pdf" >nul 2>nul
+        )
     )
 )
 

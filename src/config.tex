@@ -26,6 +26,8 @@
 \usepackage{indentfirst}
 \usepackage{color}
 \usepackage{graphicx}
+\graphicspath{{figuras/}{figuras/diagramas/}{figuras/graficos/}{figuras/capturas/}}
+\usepackage{pdfpages} % Permite incluir o PDF da Ficha Catalográfica emitida pela biblioteca
 \usepackage{csquotes}
 
 % --- Matemática e Tabelas ---
@@ -53,6 +55,18 @@
 \captionnamefont{\small\bfseries}
 \captiontitlefont{\small}
 \captiondelim{ -- } % Padrão ABNT (travessão separando label do texto)
+
+% --- Ambiente Formal de Quadros (ABNT / IBGE - 100% nativo do memoir/abnTeX2) ---
+\newcommand{\quadroname}{Quadro}
+\newcommand{\listofquadrosname}{LISTA DE QUADROS}
+\newfloat[chapter]{quadro}{loq}{\quadroname}
+\newlistof{listofquadros}{loq}{\listofquadrosname}
+\newlistentry{quadro}{loq}{0}
+\counterwithout{quadro}{chapter}
+\renewcommand{\thequadro}{\arabic{quadro}}
+\renewcommand{\cftquadroname}{\quadroname\space}
+\renewcommand*{\cftquadroaftersnum}{\hfill--\hfill}
+\providecommand*{\quadroautorefname}{Quadro}
 
 % --- Código-fonte ---
 \usepackage{listings}
@@ -151,6 +165,8 @@
     \renewcommand{\contentsname}{SUMÁRIO}
     \renewcommand{\listfigurename}{LISTA DE FIGURAS}
     \renewcommand{\listtablename}{LISTA DE TABELAS}
+    \renewcommand{\listofquadrosname}{LISTA DE QUADROS}
+    \renewcommand{\listadesiglasname}{LISTA DE ABREVIATURAS E SIGLAS}
 }
 
 \setlength{\beforechapskip}{18pt}
@@ -193,6 +209,26 @@
 }
 
 \makeatletter
+% --- Variáveis Opcionais de Banca e Aprovação (preenchidas em src/metadados.tex) ---
+\newcommand{\@dataaprovacao}{}
+\newcommand{\dataaprovacao}[1]{\renewcommand{\@dataaprovacao}{#1}}
+\newcommand{\@orientadorinstituicao}{Instituto Federal de Educação, Ciência e Tecnologia de Sergipe -- IFS}
+\newcommand{\orientadorinstituicao}[1]{\renewcommand{\@orientadorinstituicao}{#1}}
+\newcommand{\@coorientadorinstituicao}{}
+\newcommand{\coorientadorinstituicao}[1]{\renewcommand{\@coorientadorinstituicao}{#1}}
+\newcommand{\@bancaum}{}
+\newcommand{\bancaum}[1]{\renewcommand{\@bancaum}{#1}}
+\newcommand{\@bancauminstituicao}{}
+\newcommand{\bancauminstituicao}[1]{\renewcommand{\@bancauminstituicao}{#1}}
+\newcommand{\@bancadois}{}
+\newcommand{\bancadois}[1]{\renewcommand{\@bancadois}{#1}}
+\newcommand{\@bancadoisinstituicao}{}
+\newcommand{\bancadoisinstituicao}[1]{\renewcommand{\@bancadoisinstituicao}{#1}}
+\newcommand{\@bancatres}{}
+\newcommand{\bancatres}[1]{\renewcommand{\@bancatres}{#1}}
+\newcommand{\@bancatresinstituicao}{}
+\newcommand{\bancatresinstituicao}[1]{\renewcommand{\@bancatresinstituicao}{#1}}
+
 \renewcommand{\imprimirfolhaderosto}{%
   \begin{folhaderosto}
     \center
@@ -215,6 +251,10 @@
         \imprimirpreambulo\par
         \vspace{0.5cm}
         Orientador: \imprimirorientador
+        \ifdefempty{\imprimircoorientador}{}{%
+            \par\vspace{0.2cm}
+            Coorientador: \imprimircoorientador
+        }
     \end{minipage}
     \end{flushright}
     
@@ -223,6 +263,61 @@
     {\normalsize\MakeUppercase{\imprimirlocal}\par}
     {\normalsize\imprimirdata\par}
   \end{folhaderosto}
+}
+
+% --- Folha de Aprovação Institucional (IFS / ABNT NBR 14724) ---
+\newcommand{\imprimirfolhadeaprovacao}{%
+  \begin{folhadeaprovacao}
+    \begin{center}
+      {\normalsize\MakeUppercase{\imprimirautor}\par}
+      \vspace{1.2cm}
+      {\normalsize\bfseries\MakeUppercase{\imprimirtitulo}\par}
+    \end{center}
+    \vspace{1.0cm}
+    \begin{flushright}
+      \begin{minipage}{8cm}
+        \SingleSpacing
+        \normalsize
+        \imprimirpreambulo
+      \end{minipage}
+    \end{flushright}
+    \vspace{0.8cm}
+    \noindent Aprovado em: \ifdefempty{\@dataaprovacao}{\underline{\hspace{1.2cm}} de \underline{\hspace{3.2cm}} de \imprimirdata.}{\@dataaprovacao}\par
+    \vspace{0.8cm}
+    \begin{center}
+      {\normalsize\bfseries BANCA EXAMINADORA}
+    \end{center}
+    \setlength{\ABNTEXsignwidth}{11cm}
+    \setlength{\ABNTEXsignthickness}{0.8pt}
+    \setlength{\ABNTEXsignskip}{0.9cm}
+    \assinatura{\textbf{\imprimirorientador} (Orientador) \\ \@orientadorinstituicao}
+    \ifdefempty{\imprimircoorientador}{}{%
+      \assinatura{\textbf{\imprimircoorientador} (Coorientador) \\ \@coorientadorinstituicao}%
+    }
+    \ifdefempty{\@bancaum}{}{%
+      \assinatura{\textbf{\@bancaum} (Avaliador) \\ \@bancauminstituicao}%
+    }
+    \ifdefempty{\@bancadois}{}{%
+      \assinatura{\textbf{\@bancadois} (Avaliador) \\ \@bancadoisinstituicao}%
+    }
+    \ifdefempty{\@bancatres}{}{%
+      \assinatura{\textbf{\@bancatres} (Avaliador) \\ \@bancatresinstituicao}%
+    }
+    \vfill
+    \begin{center}
+      {\normalsize\MakeUppercase{\imprimirlocal}\par}
+      {\normalsize\imprimirdata\par}
+    \end{center}
+  \end{folhadeaprovacao}
+}
+
+% --- Ficha Catalográfica (PDF fornecido pela biblioteca do IFS) ---
+\newcommand{\inserirfichacatalografica}[1]{%
+  \IfFileExists{#1}{%
+    \begin{fichacatalografica}
+      \includepdf[pages=1]{#1}
+    \end{fichacatalografica}
+  }{}%
 }
 \makeatother
 

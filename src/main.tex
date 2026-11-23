@@ -23,12 +23,33 @@
 \frenchspacing
 
 % ------------------------------------------------------------------
-% ELEMENTOS PRÉ-TEXTUAIS
+% ELEMENTOS PRÉ-TEXTUAIS (Ordem oficial ABNT NBR 14724 / IFS)
 % ------------------------------------------------------------------
 \imprimircapa
 \imprimirfolhaderosto
 
-% Colocar quando precisa realmente \input{pre-textuais}
+% Ficha Catalográfica (descomente quando receber o PDF da biblioteca do IFS)
+% \inserirfichacatalografica{figuras/ficha-catalografica.pdf}
+
+\imprimirfolhadeaprovacao
+
+% Dedicatória, Agradecimentos, Epígrafe, Resumo, Abstract e Lista de Siglas
+\input{pre-textuais}
+
+% ------------------------------------------------------------------
+% LISTAS DE ILUSTRAÇÕES, QUADROS E TABELAS
+% ------------------------------------------------------------------
+\pdfbookmark[0]{\listfigurename}{lof}
+\listoffigures*
+\cleardoublepage
+
+\pdfbookmark[0]{\listofquadrosname}{loq}
+\listofquadros*
+\cleardoublepage
+
+\pdfbookmark[0]{\listtablename}{lot}
+\listoftables*
+\cleardoublepage
 
 % ------------------------------------------------------------------
 % SUMÁRIO

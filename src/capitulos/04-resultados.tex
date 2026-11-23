@@ -2,4 +2,19 @@
 % [AGENT: INSERIR TEXTO DOS RESULTADOS AQUI]
 % Dica: Apresente os dados coletados e discuta-os à luz do referencial teórico.
 
-Análise dos resultados.
+Esta seção apresenta os resultados quantitativos obtidos nos experimentos controlados. Conforme as normas do IBGE e da ABNT, dados numéricos são sintetizados em tabelas com bordas laterais abertas via \texttt{booktabs}, como demonstrado na \autoref{tab:resultados-exemplo}.
+
+\begin{table}[!htbp]
+    \centering
+    \caption{Exemplo de resultados quantitativos por cenário experimental}
+    \begin{tabular}{lccc}
+        \toprule
+        \textbf{Cenário} & \textbf{Execuções ($n$)} & \textbf{Taxa de Acerto (\%)} & \textbf{Latência Média (s)} \\
+        \midrule
+        Linha de Base ($C_1$) & 30 & 63,3 & 1,42 \\
+        Contexto Estruturado ($C_2$) & 30 & 96,7 & 1,85 \\
+        \bottomrule
+    \end{tabular}
+    \fonte{Elaborado pelo autor (\the\year).}
+    \label{tab:resultados-exemplo}
+\end{table}

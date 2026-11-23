@@ -2,4 +2,36 @@
 % [AGENT: INSERIR TEXTO DO REFERENCIAL TEÓRICO AQUI]
 % Dica: Cite trabalhos relacionados e os conceitos teóricos que sustentam sua pesquisa.
 
-Aqui entra a fundamentação teórica.
+A fundamentação teórica apresenta os conceitos essenciais da área de estudo, articulando a literatura científica com o problema investigado. Conforme destacado por \textcite{exemplo2026}, a adoção de ferramentas tipográficas declarativas reduz falhas de formatação e permite que o pesquisador concentre esforços na qualidade científica do texto.
+
+\section{Exemplos de Citações Diretas (Padrão ABNT)}
+
+Em citações diretas curtas (com até três linhas), o trecho transcrito deve aparecer integrado ao parágrafo entre aspas duplas, acompanhado da indicação de página: ``o uso estruturado de ambientes reprodutíveis eleva a rastreabilidade técnica em projetos de computação'' \cite[p.~48]{exemplo2026}.
+
+Já nas citações diretas longas (com mais de três linhas), utiliza-se o ambiente \texttt{citacao}, que aplica automaticamente o recuo de 4~cm à esquerda, fonte reduzida, espaçamento simples e ausência de aspas:
+
+\begin{citacao}
+A padronização documental em trabalhos acadêmicos de Sistemas de Informação facilita a revisão por pares, assegura consistência bibliográfica segundo a ABNT NBR 6023 e permite a automação do fluxo editorial sem comprometer a autoria intelectual do pesquisador \cite[p.~52]{exemplo2026}.
+\end{citacao}
+
+\section{Diferenciação entre Quadro e Tabela (ABNT / IBGE)}
+
+Segundo a ABNT NBR 14724 e as normas de apresentação tabular do IBGE, elementos com conteúdo predominantemente textual ou comparativo devem ser formatados como \textbf{Quadros} (com bordas laterais fechadas), enquanto dados essencialmente numéricos utilizam \textbf{Tabelas} (com bordas laterais abertas). O \autoref{quadro:diferenca-quadro-tabela} sintetiza essa distinção, complementando o fluxo de ambientes isolados discutido por \textcite{devcontainer}.
+
+\begin{quadro}[!htbp]
+    \centering
+    \caption{Distinção normativa entre Quadro e Tabela segundo a ABNT e o IBGE}
+    \begin{tabularx}{\textwidth}{|l|X|X|}
+        \hline
+        \textbf{Critério} & \textbf{Quadro (\texttt{quadro})} & \textbf{Tabela (\texttt{table})} \\
+        \hline
+        Natureza dos dados & Textual, qualitativo, comparativo ou conceitual & Numérico, estatístico ou quantitativo \\
+        \hline
+        Bordas laterais & Fechadas (linhas verticais externas visíveis) & Abertas (sem linhas verticais nas extremidades) \\
+        \hline
+        Lista pré-textual & Lista de Quadros (\texttt{\textbackslash listofquadros*}) & Lista de Tabelas (\texttt{\textbackslash listoftables*}) \\
+        \hline
+    \end{tabularx}
+    \fonte{Elaborado pelo autor (\the\year).}
+    \label{quadro:diferenca-quadro-tabela}
+\end{quadro}

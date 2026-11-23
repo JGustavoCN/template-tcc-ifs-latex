@@ -17,8 +17,8 @@ MAIN_FILE = main.tex
 BUILD_DIR = build
 FIGURES_DIR = $(SRC_DIR)/figuras
 
-MMD_FILES = $(wildcard $(FIGURES_DIR)/*.mmd)
-PDF_FIGURES = $(patsubst $(FIGURES_DIR)/%.mmd, $(FIGURES_DIR)/%.pdf, $(MMD_FILES))
+MMD_FILES = $(wildcard $(FIGURES_DIR)/*.mmd $(FIGURES_DIR)/diagramas/*.mmd)
+PDF_FIGURES = $(MMD_FILES:.mmd=.pdf)
 
 # Comandos de build usando latexmk
 # O latexmk resolve todas as dependências e múltiplas compilações
@@ -44,6 +44,11 @@ figures: check-node $(PDF_FIGURES)
 	@echo "Processamento de figuras concluído."
 
 $(FIGURES_DIR)/%.pdf: $(FIGURES_DIR)/%.mmd
+	@echo "Compilando $< -> $@..."
+	@npx -y @mermaid-js/mermaid-cli -i "$<" -o "$@" -b transparent
+	@-$(WHICH) pdfcrop $(DEVNUL) && pdfcrop "$@" "$@" $(DEVNUL) || true
+
+$(FIGURES_DIR)/diagramas/%.pdf: $(FIGURES_DIR)/diagramas/%.mmd
 	@echo "Compilando $< -> $@..."
 	@npx -y @mermaid-js/mermaid-cli -i "$<" -o "$@" -b transparent
 	@-$(WHICH) pdfcrop $(DEVNUL) && pdfcrop "$@" "$@" $(DEVNUL) || true
