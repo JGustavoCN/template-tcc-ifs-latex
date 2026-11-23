@@ -75,9 +75,10 @@ goto :eof
 
 :build
 echo Compilando %MAIN_FILE%...
+set max_print_line=10000
 latexmk -pdf -silent -interaction=nonstopmode -outdir=%BUILD_DIR% -cd %SRC_DIR%\%MAIN_FILE%
 if %ERRORLEVEL% NEQ 0 (
-    echo [ERRO] Falha na compilacao do LaTeX. Execute '.\make.bat check' para ver detalhes.
+    echo [ERRO] Falha na compilacao do LaTeX. Execute '.\make.bat check --no-build' para ver detalhes.
     exit /b %ERRORLEVEL%
 )
 echo Compilacao concluida. PDF gerado na pasta %SRC_DIR%\%BUILD_DIR%\
@@ -90,7 +91,7 @@ if %ERRORLEVEL% NEQ 0 (
     echo Para executar o diagnostico e auditoria ABNT, instale o Node.js: https://nodejs.org/
     exit /b 1
 )
-node scripts\check.js %2 %3 %4
+node scripts\check.js %2 %3 %4 %5 %6
 goto :eof
 
 :portal
@@ -116,12 +117,14 @@ goto :eof
 :clean
 echo Limpando arquivos auxiliares...
 latexmk -c -outdir=%BUILD_DIR% -cd %SRC_DIR%\%MAIN_FILE%
+if exist "%SRC_DIR%\%BUILD_DIR%\*-SAVE-ERROR" del /q "%SRC_DIR%\%BUILD_DIR%\*-SAVE-ERROR" >nul 2>nul
 echo Limpeza de arquivos auxiliares concluida.
 goto :eof
 
 :cleanall
 echo Limpando todos os arquivos gerados (incluindo PDF)...
 latexmk -C -outdir=%BUILD_DIR% -cd %SRC_DIR%\%MAIN_FILE%
+if exist "%SRC_DIR%\%BUILD_DIR%\*-SAVE-ERROR" del /q "%SRC_DIR%\%BUILD_DIR%\*-SAVE-ERROR" >nul 2>nul
 echo Limpeza total concluida.
 goto :eof
 

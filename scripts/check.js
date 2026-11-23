@@ -3,33 +3,34 @@
  * check.js - Verificador Inteligente de Build, Diagramação e Conformidade ABNT para TCC.
  *
  * Funcionalidades:
- * 1. Diagnóstico do Build (src/build/main.log e main.blg):
- *    - Erros fatais de compilação sem o ruído do LaTeX
- *    - Citações e referências cruzadas não resolvidas
- *    - Problemas de espaçamento e diagramação:
- *      * Underfull \vbox: páginas com grandes vazios ou espaçamentos excessivos entre tabelas/textos
- *      * Overfull \vbox: conteúdo estourando a margem inferior
- *      * Overfull \hbox: linhas ou tabelas vazando a margem direita
- *      * Flutuadores problemáticos (tabelas/figuras muito grandes ou 'h' forçado)
- *    - Avisos do Biber / BibLaTeX no processamento de referências
- *    - Estatísticas do documento (páginas totais, tamanho do PDF)
- * 2. Auditoria ABNT e Redação (src/capitulos/*.tex):
- *    - Figuras e tabelas sem legenda (\caption), fonte (\fonte) ou rótulo (\label)
- *    - Vícios de linguagem acadêmica (1ª pessoa do singular/plural)
- *    - Palavras duplicadas em sequência acidental
- * 3. Suporte a formatos de saída:
- *    - Terminal interativo com resumo limpo e colorido
- *    - Saída em JSON (--json) para consumo estruturado por IAs e pipelines
+ * 1. Auto-build inteligente:
+ *    - Detecta se src/build/main.log está ausente, desatualizado (via main.fdb_latexmk)
+ *      ou não convergiu (via main.run.xml) e compila automaticamente via latexmk.
+ *    - Suporta --no-build para auditar estritamente o último log existente.
+ * 2. Diagnóstico do Build (src/build/main.log, main.fls, main.blg, main.run.xml):
+ *    - Parser de pilha de parênteses com unwrapping de 79 colunas e validação via main.fls
+ *    - Mapeamento exato de Overfull/Underfull \hbox para arquivo .tex ou main.lot/main.lof -> Tabela/Figura -> .tex
+ *    - Erros fatais, referências/citações ausentes, avisos do Biber, *-SAVE-ERROR e PDF 1.7
+ * 3. Auditoria de Flutuadores e Diagramação (via LayoutInspector):
+ *    - Preâmbulo (config.tex), proporção /MediaBox de figuras PDF, Float Drift e Float Congestion
+ * 4. Auditoria ABNT e Redação (.tex):
+ *    - Suporte completo a \caption[curto]{longo}, alerta preventivo para \caption com \texttt/$
+ *    - Tolerância amigável a \legend, diretivas % check-ignore, palavras duplicadas Unicode,
+ *      voz impessoal, travessões, termos arcaicos, parágrafos densos e citações estáticas.
  *
  * Uso:
  *   node scripts/check.js
  *   node scripts/check.js --json
+ *   node scripts/check.js --floats
+ *   node scripts/check.js --no-build
  *   node scripts/check.js --build-only
  *   node scripts/check.js --text-only
  */
 
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
+const LayoutInspector = require('./lib/layout_inspector');
 
 // Suporte a cores ANSI
 const isColorSupported = process.stdout.isTTY && !process.env.NO_COLOR && !process.argv.includes('--no-color');
@@ -38,6 +39,7 @@ const YELLOW = isColorSupported ? '\x1b[33m' : '';
 const RED = isColorSupported ? '\x1b[31m' : '';
 const BLUE = isColorSupported ? '\x1b[34m' : '';
 const CYAN = isColorSupported ? '\x1b[36m' : '';
+const GRAY = isColorSupported ? '\x1b[90m' : '';
 const BOLD = isColorSupported ? '\x1b[1m' : '';
 const RESET = isColorSupported ? '\x1b[0m' : '';
 
@@ -47,6 +49,7 @@ class TCCChecker {
     this.srcDir = path.join(rootDir, 'src');
     this.buildDir = path.join(this.srcDir, 'build');
     this.options = options;
+    this.layoutInspector = new LayoutInspector(rootDir);
 
     this.report = {
       timestamp: new Date().toISOString(),
@@ -56,21 +59,36 @@ class TCCChecker {
         warningsCount: 0,
         suggestionsCount: 0,
         pages: null,
-        pdfSizeBytes: null,
+        pdfSizeBytes: null
       },
       buildDiagnostics: {
         hasBuildFiles: false,
+        autoBuilt: false,
+        autoBuildReason: null,
+        buildConverged: true,
+        saveErrorFiles: [],
         compilationErrors: [],
         layoutIssues: {
-          underfullVbox: [], // Espaços verticais excessivos (tabelas/textos esticados)
-          overfullVbox: [],  // Estouro vertical inferior
-          overfullHbox: [],  // Estouro horizontal lateral
-          floatWarnings: []  // Tabelas/figuras com problemas de posicionamento
+          underfullVbox: [],
+          overfullVbox: [],
+          overfullHbox: [],
+          underfullHbox: [],
+          floatWarnings: []
         },
         missingReferences: [],
         missingCitations: [],
         biberWarnings: [],
+        pdfInclusionWarnings: [],
         generalWarnings: []
+      },
+      layoutAudit: {
+        hasAux: false,
+        preambleIssues: [],
+        figureAspectIssues: [],
+        floatDrifts: [],
+        floatCongestions: [],
+        specifierIssues: [],
+        floatsSummary: []
       },
       textAudit: {
         environmentIssues: [],
@@ -89,64 +107,437 @@ class TCCChecker {
     }
   }
 
-  addError(category, details) {
-    this.report.summary.errorsCount++;
-    this.report.summary.status = 'ERROR';
-    if (this.report[category]) {
-      if (Array.isArray(this.report[category])) {
-        this.report[category].push(details);
-      }
-    }
-  }
-
-  addWarning(category, details) {
+  bumpWarning() {
     this.report.summary.warningsCount++;
     if (this.report.summary.status !== 'ERROR') {
       this.report.summary.status = 'WARNING';
     }
-    if (this.report[category]) {
-      if (Array.isArray(this.report[category])) {
-        this.report[category].push(details);
-      }
-    }
   }
 
-  addSuggestion(category, details) {
-    this.report.summary.suggestionsCount++;
-    if (this.report[category]) {
-      if (Array.isArray(this.report[category])) {
-        this.report[category].push(details);
-      }
-    }
+  bumpError() {
+    this.report.summary.errorsCount++;
+    this.report.summary.status = 'ERROR';
   }
 
-  checkBuildLog() {
-    let logFile = path.join(this.buildDir, 'main.log');
-    let blgFile = path.join(this.buildDir, 'main.blg');
-    let pdfFile = path.join(this.buildDir, 'main.pdf');
+  /**
+   * Lista recursivamente arquivos de entrada relevantes em src/ (ignorando src/build/).
+   */
+  collectProjectInputFiles() {
+    const fdbFile = this.layoutInspector.resolveBuildArtifact('main.fdb_latexmk');
+    const tracked = [];
 
-    if (!fs.existsSync(logFile)) {
-      // Fallback para caso o build tenha ocorrido diretamente em src/ (ex: CI/CD ou Overleaf)
-      const altLog = path.join(this.srcDir, 'main.log');
-      if (fs.existsSync(altLog)) {
-        logFile = altLog;
-        blgFile = path.join(this.srcDir, 'main.blg');
-        pdfFile = path.join(this.srcDir, 'main.pdf');
-      } else {
-        this.report.buildDiagnostics.hasBuildFiles = false;
-        return;
-      }
-    }
-    this.report.buildDiagnostics.hasBuildFiles = true;
-
-    if (fs.existsSync(pdfFile)) {
+    if (fdbFile && fs.existsSync(fdbFile)) {
       try {
-        const stats = fs.statSync(pdfFile);
-        this.report.summary.pdfSizeBytes = stats.size;
+        const fdbContent = fs.readFileSync(fdbFile, 'utf-8');
+        const regex = /^\s+"([^"]+)"\s+\d+/gm;
+        let m;
+        while ((m = regex.exec(fdbContent)) !== null) {
+          const entry = m[1];
+          // Ignora arquivos absolutos de sistema (MiKTeX/TeX Live) e saídas em build/
+          if (path.isAbsolute(entry) || /^build[/\\]/i.test(entry)) continue;
+          const full = path.join(this.srcDir, entry);
+          if (fs.existsSync(full)) tracked.push(full);
+        }
       } catch (e) {}
     }
 
-    const logContent = fs.readFileSync(logFile, 'utf-8');
+    if (tracked.length > 0) return [...new Set(tracked)];
+
+    // Fallback: varre src/ por .tex, .bib, .pdf, .png, .jpg
+    const exts = new Set(['.tex', '.bib', '.pdf', '.png', '.jpg', '.jpeg']);
+    const results = [];
+    const walk = (dir) => {
+      if (!fs.existsSync(dir)) return;
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          if (path.resolve(full) === path.resolve(this.buildDir)) continue;
+          walk(full);
+        } else if (exts.has(path.extname(entry.name).toLowerCase())) {
+          results.push(full);
+        }
+      }
+    };
+    walk(this.srcDir);
+    return results;
+  }
+
+  /**
+   * Garante que exista um build recente antes da auditoria (salvo com --no-build ou --text-only).
+   */
+  ensureFreshBuild() {
+    if (this.options.noBuild || this.options.textOnly) return;
+
+    const existingLog = this.layoutInspector.resolveBuildArtifact('main.log');
+    const existingAux = this.layoutInspector.resolveBuildArtifact('main.aux');
+    const runXml = this.layoutInspector.resolveBuildArtifact('main.run.xml');
+
+    let reason = null;
+
+    if (!existingLog || !existingAux) {
+      reason = 'arquivos de build ausentes em src/build/';
+    } else {
+      const logMtime = fs.statSync(existingLog).mtimeMs;
+      const inputs = this.collectProjectInputFiles();
+      for (const inp of inputs) {
+        try {
+          const st = fs.statSync(inp);
+          if (st.mtimeMs > logMtime + 1500) {
+            const rel = path.relative(this.rootDir, inp).replace(/\\/g, '/');
+            reason = `arquivo alterado após último build (${rel})`;
+            break;
+          }
+        } catch (e) {}
+      }
+
+      if (!reason && runXml && fs.existsSync(runXml)) {
+        try {
+          const xml = fs.readFileSync(runXml, 'utf-8');
+          if (/active="1"/.test(xml)) {
+            reason = 'compilação anterior não convergiu (main.run.xml ativo)';
+          }
+        } catch (e) {}
+      }
+    }
+
+    if (!reason) return;
+
+    // Verifica se latexmk está disponível (evita falhar em ambientes Node-only no CI)
+    const probe = spawnSync('latexmk', ['--version'], {
+      cwd: this.rootDir,
+      stdio: 'pipe',
+      encoding: 'utf-8'
+    });
+    if (probe.error) {
+      return;
+    }
+
+    if (!this.options.json) {
+      console.log(`\n${CYAN}⚙️  Auto-build acionado:${RESET} ${reason}`);
+      console.log(`${GRAY}   Executando latexmk com max_print_line=10000...${RESET}`);
+    }
+
+    const res = spawnSync(
+      'latexmk',
+      ['-pdf', '-silent', '-interaction=nonstopmode', '-outdir=build', '-cd', path.join('src', 'main.tex')],
+      {
+        cwd: this.rootDir,
+        env: { ...process.env, max_print_line: '10000' },
+        stdio: 'pipe',
+        encoding: 'utf-8'
+      }
+    );
+
+    this.report.buildDiagnostics.autoBuilt = true;
+    this.report.buildDiagnostics.autoBuildReason = reason;
+
+    if (res.status !== 0 && !this.options.json) {
+      console.log(`${YELLOW}   [AVISO] latexmk retornou código ${res.status}; prosseguindo com diagnóstico do log.${RESET}`);
+    }
+  }
+
+  /**
+   * Carrega o conjunto de arquivos reais lidos pelo pdflatex a partir de main.fls.
+   */
+  loadFlsInputSet() {
+    const flsFile = this.layoutInspector.resolveBuildArtifact('main.fls');
+    const known = new Set();
+    if (!flsFile) return known;
+
+    try {
+      const lines = fs.readFileSync(flsFile, 'utf-8').split(/\r?\n/);
+      for (const line of lines) {
+        if (line.startsWith('INPUT ')) {
+          const raw = line.slice(6).trim().replace(/\\/g, '/');
+          known.add(raw);
+          known.add(raw.replace(/^\.\//, ''));
+          known.add(path.basename(raw));
+        }
+      }
+    } catch (e) {}
+    return known;
+  }
+
+  /**
+   * Desembrulha linhas quebradas rigidamente na coluna 79 pelo pdflatex.
+   */
+  unwrapTexLogLines(rawLines) {
+    const unwrapped = [];
+    const headerStartRegex = /^(?:Overfull |Underfull |LaTeX |Package |pdfTeX |! |l\.\d+|Output written|Here is how much|PDF statistics|\[\d+\])/;
+
+    let i = 0;
+    while (i < rawLines.length) {
+      let current = rawLines[i];
+      while (
+        current.length === 79 &&
+        i + 1 < rawLines.length &&
+        rawLines[i + 1].length > 0 &&
+        !headerStartRegex.test(rawLines[i + 1])
+      ) {
+        i++;
+        current += rawLines[i];
+      }
+      unwrapped.push(current);
+      i++;
+    }
+    return unwrapped;
+  }
+
+  /**
+   * Limpa códigos de fonte internos do dump de caixa do TeX para leitura humana.
+   */
+  cleanTexBoxDump(rawLine) {
+    if (!rawLine) return null;
+    const cleaned = rawLine
+      .replace(/\[\]/g, '')
+      .replace(/\\(?:T1|OT1|OML|OMS|OMX|TS1)\/[a-zA-Z0-9]+\/[a-zA-Z0-9]+\/[a-zA-Z0-9]+\/[0-9.]+(?:\s*\([^)]*\))?\s*/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return cleaned.length > 0 ? cleaned.slice(0, 110) : null;
+  }
+
+  /**
+   * Rastreia a pilha real de parênteses '(' e ')' no main.log (após unwrapping de 79 colunas)
+   * para mapear Overfull/Underfull \hbox e Float too large ao arquivo .tex ou main.lot/main.lof.
+   */
+  parseLogLayoutEvents(logContent) {
+    const rawLines = logContent.split(/\r?\n/);
+    const lines = this.unwrapTexLogLines(rawLines);
+    const flsInputs = this.loadFlsInputSet();
+
+    // Pilha unificada de parênteses: cada '(' empilha { isFile, filePath? }; cada ')' desempilha 1.
+    // Assim parênteses de texto como (badness 10000) ou (babel) nunca corrompem o arquivo ativo.
+    const parenStack = [];
+    const overfullHboxes = [];
+    const underfullHboxes = [];
+    const floatTooLarge = [];
+
+    const fileExtRegex = /\.(?:tex|lot|lof|toc|cls|sty|aux|bbl|fd|def|cfg|lbx|ldf|clo|trsl|ini|mkii)$/i;
+    const overfullRegex = /Overfull \\hbox \(([0-9.]+pt too wide)\) in (?:paragraph|alignment) at lines? (\d+)(?:--(\d+))?/;
+    const underfullRegex = /Underfull \\hbox \(badness (10000)\) in (?:paragraph|alignment) at lines? (\d+)(?:--(\d+))?/;
+    const floatLargeRegex = /Float too large for page by ([0-9.]+pt) on input line (\d+)/;
+
+    const getActiveProjectFile = () => {
+      for (let j = parenStack.length - 1; j >= 0; j--) {
+        const node = parenStack[j];
+        if (!node.isFile) continue;
+        const fp = node.filePath;
+        if (/(?:MiKTeX|texlive|texmf)/i.test(fp)) continue;
+        if (/\.(?:tex|lot|lof|toc)$/i.test(fp)) return fp;
+      }
+      return null;
+    };
+
+    const resolveLocation = (activeFile, startLine, endLine, nextLogLine) => {
+      const logSnippet = this.cleanTexBoxDump(nextLogLine);
+
+      if (!activeFile) {
+        return {
+          file: null,
+          listSource: null,
+          element: null,
+          lines: `${startLine}-${endLine}`,
+          snippet: logSnippet,
+          suggestion: null
+        };
+      }
+
+      const norm = activeFile.replace(/\\/g, '/').replace(/^\.\//, '');
+      const base = path.basename(norm).toLowerCase();
+
+      // Caso 1: Estouro na Lista de Tabelas (main.lot) ou Lista de Figuras (main.lof)
+      if (base === 'main.lot' || base === 'main.lof') {
+        const listKind = base === 'main.lot' ? 'lot' : 'lof';
+        const resolved = this.layoutInspector.resolveListEntry(listKind, startLine);
+        if (resolved) {
+          const texLoc = resolved.sourceFile
+            ? `${resolved.sourceFile}:${resolved.captionLine || resolved.declLine}`
+            : null;
+          return {
+            file: resolved.sourceFile || `src/build/${base}`,
+            sourceLine: resolved.captionLine || resolved.declLine || startLine,
+            listSource: `${base}:${startLine}`,
+            element: `${resolved.type} ${resolved.number}`,
+            pdfPage: resolved.page,
+            lines: `${startLine}-${endLine}`,
+            snippet: logSnippet || resolved.title.slice(0, 100),
+            suggestion: texLoc
+              ? `Use \\caption[Título curto sem código/fórmula]{Título completo} em ${texLoc} para evitar corte do número da página na lista.`
+              : 'Use \\caption[Título curto sem código/fórmula]{Título completo} para evitar corte na lista.'
+          };
+        }
+        return {
+          file: `src/build/${base}`,
+          listSource: `${base}:${startLine}`,
+          element: listKind === 'lot' ? 'Lista de Tabelas' : 'Lista de Figuras',
+          lines: `${startLine}-${endLine}`,
+          snippet: logSnippet,
+          suggestion: 'Use \\caption[Título curto]{Título completo} na tabela/figura correspondente.'
+        };
+      }
+
+      // Caso 2: Arquivo .tex do projeto (capítulo, apêndice, anexo, main.tex, pre-textuais.tex)
+      let fullCandidate = path.isAbsolute(norm) ? norm : path.join(this.srcDir, norm);
+      if (!fs.existsSync(fullCandidate)) {
+        fullCandidate = path.join(this.rootDir, norm);
+      }
+
+      let relFile = norm;
+      let texSnippet = null;
+      if (fs.existsSync(fullCandidate)) {
+        relFile = path.relative(this.rootDir, fullCandidate).replace(/\\/g, '/');
+        try {
+          const fLines = fs.readFileSync(fullCandidate, 'utf-8').split(/\r?\n/);
+          const chunk = fLines
+            .slice(Math.max(0, startLine - 1), endLine)
+            .map(l => l.trim())
+            .filter(Boolean);
+          if (chunk.length > 0) {
+            texSnippet = chunk.join(' ').slice(0, 110);
+          }
+        } catch (e) {}
+      }
+
+      return {
+        file: relFile,
+        sourceLine: startLine,
+        listSource: null,
+        element: null,
+        lines: `${startLine}-${endLine}`,
+        snippet: logSnippet || texSnippet,
+        texSnippet,
+        suggestion: null
+      };
+    };
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+
+      // 1. Checa diagnósticos de caixa/flutuador na linha atual antes/com o estado corrente da pilha
+      const ohMatch = line.match(overfullRegex);
+      if (ohMatch) {
+        const overflow = ohMatch[1];
+        const startLine = parseInt(ohMatch[2], 10);
+        const endLine = parseInt(ohMatch[3] || ohMatch[2], 10);
+        const activeFile = getActiveProjectFile();
+        const nextLine = (i + 1 < lines.length) ? lines[i + 1] : '';
+        const loc = resolveLocation(activeFile, startLine, endLine, nextLine);
+
+        overfullHboxes.push({
+          ...loc,
+          overflow,
+          description: loc.element
+            ? `${loc.element} (${loc.listSource}${loc.file && loc.sourceLine ? ` -> ${loc.file}:${loc.sourceLine}` : ''}) transbordou a margem em ${overflow}.`
+            : (loc.file
+              ? `Texto transbordou a margem direita em ${overflow} em ${loc.file}:${startLine}-${endLine}.`
+              : `Texto transbordou a margem direita em ${overflow} (linhas ${startLine} a ${endLine}).`)
+        });
+      }
+
+      const uhMatch = line.match(underfullRegex);
+      if (uhMatch) {
+        const startLine = parseInt(uhMatch[2], 10);
+        const endLine = parseInt(uhMatch[3] || uhMatch[2], 10);
+        const activeFile = getActiveProjectFile();
+        const nextLine = (i + 1 < lines.length) ? lines[i + 1] : '';
+        const loc = resolveLocation(activeFile, startLine, endLine, nextLine);
+
+        underfullHboxes.push({
+          ...loc,
+          badness: 10000,
+          description: loc.file
+            ? `Espaçamento horizontal muito esticado (badness 10000) em ${loc.file}:${startLine}-${endLine}.`
+            : `Espaçamento horizontal muito esticado (badness 10000) nas linhas ${startLine}-${endLine}.`
+        });
+      }
+
+      const flMatch = line.match(floatLargeRegex);
+      if (flMatch) {
+        const overflow = flMatch[1];
+        const lineNum = parseInt(flMatch[2], 10);
+        const activeFile = getActiveProjectFile();
+        const loc = resolveLocation(activeFile, lineNum, lineNum, '');
+        floatTooLarge.push({
+          file: loc.file,
+          line: lineNum,
+          overflow,
+          detail: loc.file
+            ? `Elemento flutuante excede a altura útil da página por ${overflow} em ${loc.file}:${lineNum}.`
+            : `Elemento flutuante excede a altura útil da página por ${overflow} (linha ${lineNum}).`
+        });
+      }
+
+      // 2. Atualiza a pilha de parênteses caractere por caractere
+      for (let c = 0; c < line.length; c++) {
+        const ch = line[c];
+        if (ch === '(') {
+          // Extrai o token logo após '(' até espaço, ')', '[' ou fim de linha
+          const rest = line.slice(c + 1);
+          const tokenMatch = rest.match(/^"([^"]+)"|^([^\s()\[\]]+)/);
+          const candidate = tokenMatch ? (tokenMatch[1] || tokenMatch[2] || '').replace(/\\/g, '/') : '';
+          const normCand = candidate.replace(/^\.\//, '');
+          const isFile =
+            candidate.length > 0 &&
+            (flsInputs.has(candidate) ||
+              flsInputs.has(normCand) ||
+              fileExtRegex.test(candidate));
+
+          if (isFile) {
+            parenStack.push({ isFile: true, filePath: candidate });
+          } else {
+            parenStack.push({ isFile: false });
+          }
+        } else if (ch === ')') {
+          if (parenStack.length > 0) parenStack.pop();
+        }
+      }
+    }
+
+    return { overfullHboxes, underfullHboxes, floatTooLarge };
+  }
+
+  checkBuildLog() {
+    const logFile = this.layoutInspector.resolveBuildArtifact('main.log');
+    const blgFile = this.layoutInspector.resolveBuildArtifact('main.blg');
+    const pdfFile = this.layoutInspector.resolveBuildArtifact('main.pdf');
+    const runXmlFile = this.layoutInspector.resolveBuildArtifact('main.run.xml');
+
+    if (!logFile) {
+      this.report.buildDiagnostics.hasBuildFiles = false;
+      return;
+    }
+    this.report.buildDiagnostics.hasBuildFiles = true;
+
+    if (pdfFile && fs.existsSync(pdfFile)) {
+      try {
+        this.report.summary.pdfSizeBytes = fs.statSync(pdfFile).size;
+      } catch (e) {}
+    }
+
+    // Verifica arquivos residuais *-SAVE-ERROR em src/build/
+    if (fs.existsSync(this.buildDir)) {
+      try {
+        const saveErrors = fs.readdirSync(this.buildDir).filter(f => f.endsWith('-SAVE-ERROR'));
+        if (saveErrors.length > 0) {
+          this.report.buildDiagnostics.saveErrorFiles = saveErrors;
+          this.bumpWarning();
+        }
+      } catch (e) {}
+    }
+
+    // Verifica convergência em main.run.xml (biblatex/logreq)
+    if (runXmlFile && fs.existsSync(runXmlFile)) {
+      try {
+        const xml = fs.readFileSync(runXmlFile, 'utf-8');
+        if (/active="1"/.test(xml)) {
+          this.report.buildDiagnostics.buildConverged = false;
+          this.bumpWarning();
+        }
+      } catch (e) {}
+    }
+
+    // Lê main.log em latin1 para preservar acentos T1 sem gerar caracteres corrompidos
+    const logContent = fs.readFileSync(logFile, 'latin1');
 
     // 1. Estatísticas do PDF (páginas geradas)
     const pagesMatch = logContent.match(/Output written on [\s\S]*?\(\s*([0-9]+)\s+pages?,\s*([0-9]+)\s+bytes\)/i);
@@ -168,8 +559,7 @@ class TCCChecker {
           message: errorMsg,
           context: contextLine
         });
-        this.report.summary.errorsCount++;
-        this.report.summary.status = 'ERROR';
+        this.bumpError();
       }
     }
 
@@ -184,10 +574,8 @@ class TCCChecker {
       undefRefs.get(key).push(page);
     }
     for (const [key, pages] of undefRefs.entries()) {
-      const item = { label: key, pages: [...new Set(pages)] };
-      this.report.buildDiagnostics.missingReferences.push(item);
-      this.report.summary.errorsCount++;
-      this.report.summary.status = 'ERROR';
+      this.report.buildDiagnostics.missingReferences.push({ label: key, pages: [...new Set(pages)] });
+      this.bumpError();
     }
 
     // 4. Citações bibliográficas indefinidas (\cite)
@@ -201,14 +589,11 @@ class TCCChecker {
       undefCites.get(key).push(page);
     }
     for (const [key, pages] of undefCites.entries()) {
-      const item = { citationKey: key, pages: [...new Set(pages)] };
-      this.report.buildDiagnostics.missingCitations.push(item);
-      this.report.summary.errorsCount++;
-      this.report.summary.status = 'ERROR';
+      this.report.buildDiagnostics.missingCitations.push({ citationKey: key, pages: [...new Set(pages)] });
+      this.bumpError();
     }
 
-    // 5. Diagnóstico de Espaçamento e Diagramação (Underfull \vbox / Overfull \vbox)
-    // Underfull \vbox (badness 10000) has occurred while \output is active [5]
+    // 5. Espaçamento vertical (Underfull \vbox / Overfull \vbox)
     const underfullVboxRegex = /Underfull \\vbox \(badness (\d+)\) has occurred while \\output is active \[(\d+)\]/g;
     let uvMatch;
     const uvPages = new Map();
@@ -220,18 +605,15 @@ class TCCChecker {
       }
     }
     for (const [page, badness] of uvPages.entries()) {
-      const severity = badness >= 10000 ? 'ALTO' : 'MEDIO';
       this.report.buildDiagnostics.layoutIssues.underfullVbox.push({
         page,
         badness,
-        severity,
-        description: `Espaço em branco vertical excessivo na página ${page} (badness ${badness}). Geralmente causado por tabelas ou figuras deslocadas para a próxima página ou quebras forçadas.`
+        severity: badness >= 10000 ? 'ALTO' : 'MEDIO',
+        description: `Espaço em branco vertical excessivo na página ${page} (badness ${badness}). Geralmente causado por tabelas/figuras deslocadas ou quebras forçadas.`
       });
-      this.report.summary.warningsCount++;
-      if (this.report.summary.status !== 'ERROR') this.report.summary.status = 'WARNING';
+      this.bumpWarning();
     }
 
-    // Overfull \vbox (X pt too high) has occurred while \output is active [Y]
     const overfullVboxRegex = /Overfull \\vbox \(([0-9.]+pt too high)\) has occurred while \\output is active \[(\d+)\]/g;
     let ovMatch;
     while ((ovMatch = overfullVboxRegex.exec(logContent)) !== null) {
@@ -242,52 +624,50 @@ class TCCChecker {
         overflow,
         description: `Conteúdo ultrapassou a margem inferior da página ${page} em ${overflow}.`
       });
-      this.report.summary.warningsCount++;
-      if (this.report.summary.status !== 'ERROR') this.report.summary.status = 'WARNING';
+      this.bumpWarning();
     }
 
-    // Overfull \hbox (X pt too wide) in paragraph at lines AA--BB
-    const overfullHboxRegex = /Overfull \\hbox \(([0-9.]+pt too wide)\) in paragraph at lines (\d+)--(\d+)/g;
-    let ohMatch;
-    while ((ohMatch = overfullHboxRegex.exec(logContent)) !== null) {
-      const overflow = ohMatch[1];
-      const startLine = parseInt(ohMatch[2], 10);
-      const endLine = parseInt(ohMatch[3], 10);
-      this.report.buildDiagnostics.layoutIssues.overfullHbox.push({
-        lines: `${startLine}-${endLine}`,
-        overflow,
-        description: `Texto ou elemento transbordou a margem lateral direita em ${overflow} (linhas ${startLine} a ${endLine}).`
-      });
-      this.report.summary.warningsCount++;
-      if (this.report.summary.status !== 'ERROR') this.report.summary.status = 'WARNING';
+    // 6. Overfull/Underfull \hbox e Float too large mapeados via File Stack Parser
+    const parsedEvents = this.parseLogLayoutEvents(logContent);
+    for (const oh of parsedEvents.overfullHboxes) {
+      this.report.buildDiagnostics.layoutIssues.overfullHbox.push(oh);
+      this.bumpWarning();
+    }
+    for (const uh of parsedEvents.underfullHboxes) {
+      this.report.buildDiagnostics.layoutIssues.underfullHbox.push(uh);
+      this.report.summary.suggestionsCount++;
+    }
+    for (const fl of parsedEvents.floatTooLarge) {
+      this.report.buildDiagnostics.layoutIssues.floatWarnings.push(fl);
+      this.bumpWarning();
     }
 
-    // Avisos de Flutuadores (tabelas e figuras grandes ou teimosas)
-    const floatTooLargeRegex = /Float too large for page by ([0-9.]+pt) on input line (\d+)/g;
-    let flMatch;
-    while ((flMatch = floatTooLargeRegex.exec(logContent)) !== null) {
+    if (/LaTeX Warning: `!h' float specifier changed to `!ht'/g.test(logContent)) {
       this.report.buildDiagnostics.layoutIssues.floatWarnings.push({
-        line: parseInt(flMatch[2], 10),
-        detail: `Elemento flutuante excede o tamanho da página por ${flMatch[1]} (linha ${flMatch[2]}).`
-      });
-      this.report.summary.warningsCount++;
-      if (this.report.summary.status !== 'ERROR') this.report.summary.status = 'WARNING';
-    }
-
-    const floatSpecifierRegex = /LaTeX Warning: `!h' float specifier changed to `!ht'/g;
-    if (floatSpecifierRegex.test(logContent)) {
-      this.report.buildDiagnostics.layoutIssues.floatWarnings.push({
-        detail: "Especificador de flutuador '[!h]' forçado foi alterado automaticamente para '[!ht]' pelo LaTeX para evitar quebra de página inadequada."
+        detail: "Especificador '[!h]' foi alterado automaticamente para '[!ht]' pelo LaTeX. Prefira '[!htbp]'."
       });
       this.report.summary.suggestionsCount++;
     }
 
-    // 6. Avisos de Pacotes Conhecidos (ignora o aviso interno do abntex2 de 'brazil' deprecado)
+    // 7. Avisos de inclusão de PDF versão > 1.5
+    const unwrappedLog = this.unwrapTexLogLines(lines).join('\n');
+    const pdfIncRegex = /pdfTeX warning: pdflatex \(file ([^)]+)\): PDF inclusion: found PDF version <([^>]+)>, but at most version <([^>]+)> allowed/g;
+    let piMatch;
+    while ((piMatch = pdfIncRegex.exec(unwrappedLog)) !== null) {
+      this.report.buildDiagnostics.pdfInclusionWarnings.push({
+        file: piMatch[1].trim(),
+        foundVersion: piMatch[2],
+        maxAllowed: piMatch[3],
+        suggestion: "Adicione '\\pdfminorversion=7' em src/config.tex."
+      });
+      this.report.summary.suggestionsCount++;
+    }
 
+    // 8. Avisos conhecidos do pdfTeX
     const duplicateDestRegex = /pdfTeX warning \(ext4\): destination with the same identifier \(name\{([^}]+)\}\) has been already used/g;
     let dupMatch;
     const dupNames = new Set();
-    while ((dupMatch = duplicateDestRegex.exec(logContent)) !== null) {
+    while ((dupMatch = duplicateDestRegex.exec(unwrappedLog)) !== null) {
       dupNames.add(dupMatch[1]);
     }
     if (dupNames.size > 0) {
@@ -297,27 +677,72 @@ class TCCChecker {
       this.report.summary.suggestionsCount++;
     }
 
-    // 7. Auditoria do Biber (.blg)
-    if (fs.existsSync(blgFile)) {
+    // 9. Auditoria do Biber (.blg)
+    if (blgFile && fs.existsSync(blgFile)) {
       const blgContent = fs.readFileSync(blgFile, 'utf-8');
       const biberWarnRegex = /> WARN - (.*)/g;
       let bWarnMatch;
       while ((bWarnMatch = biberWarnRegex.exec(blgContent)) !== null) {
-        const warnText = bWarnMatch[1].trim();
-        this.report.buildDiagnostics.biberWarnings.push(warnText);
-        this.report.summary.warningsCount++;
-        if (this.report.summary.status !== 'ERROR') this.report.summary.status = 'WARNING';
+        this.report.buildDiagnostics.biberWarnings.push(bWarnMatch[1].trim());
+        this.bumpWarning();
       }
 
       const biberErrRegex = /> ERROR - (.*)/g;
       let bErrMatch;
       while ((bErrMatch = biberErrRegex.exec(blgContent)) !== null) {
-        const errText = bErrMatch[1].trim();
-        this.report.buildDiagnostics.biberWarnings.push(`ERRO BIBER: ${errText}`);
-        this.report.summary.errorsCount++;
-        this.report.summary.status = 'ERROR';
+        this.report.buildDiagnostics.biberWarnings.push(`ERRO BIBER: ${bErrMatch[1].trim()}`);
+        this.bumpError();
       }
     }
+  }
+
+  checkLayoutAndFloats() {
+    // 1. Preâmbulo (src/config.tex)
+    const pIssues = this.layoutInspector.inspectPreamble();
+    this.report.layoutAudit.preambleIssues = pIssues;
+    pIssues.forEach(iss => {
+      if (iss.severity === 'ERROR') this.bumpError();
+      else if (iss.severity === 'WARNING') this.bumpWarning();
+      else this.report.summary.suggestionsCount++;
+    });
+
+    // 2. Proporções geométricas de figuras PDF em src/figuras/
+    const fIssues = this.layoutInspector.inspectFigures();
+    this.report.layoutAudit.figureAspectIssues = fIssues;
+    fIssues.forEach(iss => {
+      if (iss.severity === 'WARNING') this.bumpWarning();
+      else this.report.summary.suggestionsCount++;
+    });
+
+    // 3. Flutuadores (main.toc + main.lot + main.lof + main.aux vs .tex)
+    const flRes = this.layoutInspector.inspectFloats();
+    this.report.layoutAudit.hasAux = flRes.hasAux;
+    this.report.layoutAudit.floatDrifts = flRes.drifts;
+    this.report.layoutAudit.floatCongestions = flRes.congestions;
+    this.report.layoutAudit.specifierIssues = flRes.specifierIssues;
+    this.report.layoutAudit.floatsSummary = flRes.floats.map(fl => ({
+      label: fl.label,
+      numero: fl.number,
+      tipo: fl.type,
+      pagina: fl.page,
+      arquivo: fl.sourceFile,
+      linha: fl.declLine,
+      secaoOrigem: fl.sectionTitle || 'Geral',
+      especificador: fl.specifier || ''
+    }));
+
+    flRes.drifts.forEach(d => {
+      if (d.severity === 'ERROR') this.bumpError();
+      else this.bumpWarning();
+    });
+
+    flRes.congestions.forEach(() => {
+      this.report.summary.suggestionsCount++;
+    });
+
+    flRes.specifierIssues.forEach(() => {
+      this.report.summary.suggestionsCount++;
+    });
   }
 
   getTexFiles() {
@@ -327,21 +752,36 @@ class TCCChecker {
     for (const dirName of searchDirs) {
       const targetDir = path.join(this.srcDir, dirName);
       if (fs.existsSync(targetDir)) {
-        const items = fs.readdirSync(targetDir);
-        for (const item of items) {
-          if (item.endsWith('.tex')) {
-            files.push(path.join(targetDir, item));
-          }
+        for (const item of fs.readdirSync(targetDir)) {
+          if (item.endsWith('.tex')) files.push(path.join(targetDir, item));
         }
       }
     }
 
     const mainTex = path.join(this.srcDir, 'main.tex');
-    if (fs.existsSync(mainTex)) {
-      files.push(mainTex);
-    }
+    if (fs.existsSync(mainTex)) files.push(mainTex);
 
     return files.sort();
+  }
+
+  /**
+   * Extrai o argumento principal {...} de \caption{...} respeitando chaves aninhadas.
+   */
+  extractCaptionInfo(body) {
+    const m = body.match(/\\caption(\[[^\]]*\])?\s*\{/);
+    if (!m) return null;
+    const hasShortTitle = Boolean(m[1]);
+    let idx = m.index + m[0].length;
+    let depth = 1;
+    let content = '';
+    while (idx < body.length && depth > 0) {
+      const ch = body[idx];
+      if (ch === '{' && body[idx - 1] !== '\\') depth++;
+      else if (ch === '}' && body[idx - 1] !== '\\') depth--;
+      if (depth > 0) content += ch;
+      idx++;
+    }
+    return { hasShortTitle, text: content };
   }
 
   checkTexFiles() {
@@ -353,57 +793,89 @@ class TCCChecker {
         const content = fs.readFileSync(filePath, 'utf-8');
         const relPath = path.relative(this.rootDir, filePath).replace(/\\/g, '/');
 
-        // A. Auditoria de Ambientes (figure e table)
-        const envPattern = /\\begin\{(figure|table)\}([\s\S]*?)\\end\{\1\}/g;
+        // A. Auditoria de Ambientes (figure, table e quadro)
+        const envPattern = /\\begin\{(figure|table|quadro)\}([\s\S]*?)\\end\{\1\}/g;
         let match;
         while ((match = envPattern.exec(content)) !== null) {
           const envType = match[1];
           const body = match[2];
-          const nomeEnv = envType === 'figure' ? 'Figura' : 'Tabela';
+          const nomeEnv = envType === 'figure' ? 'Figura' : (envType === 'quadro' ? 'Quadro' : 'Tabela');
           const lineNum = content.slice(0, match.index).split('\n').length;
 
-          const hasCaption = /\\caption\{/.test(body);
-          const hasFonte = /\\fonte\{/.test(body);
+          const ignoreAll = /%\s*check-ignore(?::\s*all)?\b/i.test(body);
+          const ignoreCaption = ignoreAll || /%\s*check-ignore:\s*no-caption/i.test(body);
+          const ignoreShortCaption = ignoreAll || /%\s*check-ignore:\s*short-caption/i.test(body);
+          const ignoreFonte = ignoreAll || /%\s*check-ignore:\s*no-fonte/i.test(body);
+          const ignoreLabel = ignoreAll || /%\s*check-ignore:\s*no-label/i.test(body);
+
+          const captionInfo = this.extractCaptionInfo(body);
+          const hasCaption = Boolean(captionInfo);
+          const hasFonteOficial = /\\fonte\{/.test(body);
+          const hasLegend = /\\legend\{/.test(body);
           const hasLabel = /\\label\{/.test(body);
 
-          if (!hasCaption) {
+          if (!hasCaption && !ignoreCaption) {
             this.report.textAudit.environmentIssues.push({
               file: relPath,
               line: lineNum,
               type: 'ERROR',
               message: `${nomeEnv} sem legenda (\\caption{...}). Exigido pela ABNT.`
             });
-            this.report.summary.errorsCount++;
-            this.report.summary.status = 'ERROR';
+            this.bumpError();
+          } else if (hasCaption && !captionInfo.hasShortTitle && !ignoreShortCaption) {
+            // Alerta preventivo: legenda sem versão curta [...] contendo código/fórmula inquebrável ou muito longa
+            const hasUnbreakable = /\\texttt\{|\\url\{|\$[^$]{10,}\$/.test(captionInfo.text);
+            const isVeryLong = captionInfo.text.length > 120;
+            if (hasUnbreakable || isVeryLong) {
+              this.report.textAudit.environmentIssues.push({
+                file: relPath,
+                line: lineNum,
+                type: 'SUGGESTION',
+                message: `Legenda de ${nomeEnv} contém trecho inquebrável (\\texttt/fórmula) ou é extensa sem título curto. Prefira \\caption[Título curto para a lista]{Título completo} para evitar estouro na lista.`
+              });
+              this.report.summary.suggestionsCount++;
+            }
           }
-          if (!hasFonte) {
-            this.report.textAudit.environmentIssues.push({
-              file: relPath,
-              line: lineNum,
-              type: 'WARNING',
-              message: `${nomeEnv} sem fonte explícita (\\fonte{...}). ABNT exige indicação de fonte em todas as ilustrações.`
-            });
-            this.report.summary.warningsCount++;
-            if (this.report.summary.status !== 'ERROR') this.report.summary.status = 'WARNING';
+
+          if (!hasFonteOficial && !ignoreFonte) {
+            if (hasLegend) {
+              this.report.textAudit.environmentIssues.push({
+                file: relPath,
+                line: lineNum,
+                type: 'SUGGESTION',
+                message: `${nomeEnv} utiliza \\legend{...}. O padrão oficial do IFS é \\fonte{...}. Considere padronizar.`
+              });
+              this.report.summary.suggestionsCount++;
+            } else {
+              this.report.textAudit.environmentIssues.push({
+                file: relPath,
+                line: lineNum,
+                type: 'WARNING',
+                message: `${nomeEnv} sem indicação de fonte (\\fonte{...}). ABNT exige indicação de fonte em todas as ilustrações.`
+              });
+              this.bumpWarning();
+            }
           }
-          if (!hasLabel) {
+
+          if (!hasLabel && !ignoreLabel) {
             this.report.textAudit.environmentIssues.push({
               file: relPath,
               line: lineNum,
               type: 'WARNING',
               message: `${nomeEnv} sem rótulo de referência cruzada (\\label{...}).`
             });
-            this.report.summary.warningsCount++;
-            if (this.report.summary.status !== 'ERROR') this.report.summary.status = 'WARNING';
+            this.bumpWarning();
           }
         }
 
-        // B. Palavras duplicadas consecutivas
+        // B. Palavras duplicadas consecutivas (lookaround Unicode estrito)
         const lines = content.split(/\r?\n/);
-        const dupPattern = /\b([a-zA-ZÀ-ÿ]{2,})\s+\1\b/gi;
+        const dupPattern = /(?<![a-zA-ZÀ-ÿ])([a-zA-ZÀ-ÿ]{2,})\s+\1(?![a-zA-ZÀ-ÿ])/gi;
         lines.forEach((line, index) => {
           const trimmed = line.trim();
           if (trimmed.startsWith('%')) return;
+          if (/%\s*check-ignore(?::\s*(?:all|repeat|repeticao))?/i.test(line)) return;
+
           const codePart = line.split('%')[0];
           let dMatch;
           while ((dMatch = dupPattern.exec(codePart)) !== null) {
@@ -412,8 +884,7 @@ class TCCChecker {
               line: index + 1,
               word: dMatch[0]
             });
-            this.report.summary.warningsCount++;
-            if (this.report.summary.status !== 'ERROR') this.report.summary.status = 'WARNING';
+            this.bumpWarning();
           }
         });
 
@@ -427,6 +898,7 @@ class TCCChecker {
         lines.forEach((line, index) => {
           const trimmed = line.trim();
           if (trimmed.startsWith('%') || line.includes('\\cite') || line.includes('\\bibitem')) return;
+          if (/%\s*check-ignore(?::\s*(?:all|tone|voz))?/i.test(line)) return;
           const codePart = line.split('%')[0];
           const cleanText = codePart.replace(/\\[a-zA-Z]+(\[[^\]]*\])?(\{[^\}]*\})?/g, ' ');
 
@@ -444,19 +916,19 @@ class TCCChecker {
           });
         });
 
-        // D. Verificação de travessões proibidos (--- ou --) no corpo do texto (skill academic_writing_style)
+        // D. Travessões proibidos (--- ou --) no corpo do texto
         const isContentFile = relPath.startsWith('src/capitulos/') || relPath.startsWith('src/apendices/') || relPath.startsWith('src/anexos/');
         if (isContentFile) {
           lines.forEach((line, index) => {
             const trimmed = line.trim();
             if (trimmed.startsWith('%') || line.includes('\\captiondelim') || line.includes('\\hypersetup')) return;
+            if (/%\s*check-ignore(?::\s*(?:all|dash|travessao))?/i.test(line)) return;
             const codePart = line.split('%')[0];
-            
-            // Remove citações com intervalos numéricos (ex: p.~15--20) e intervalos numéricos soltos
+
             const cleanLine = codePart
               .replace(/\\cite[a-zA-Z]*(\[[^\]]*\])?\{[^}]*\}/g, ' ')
               .replace(/\b\d+\s*--\s*\d+\b/g, ' ')
-              .replace(/\\caption\{[^}]*\}/g, ' ') // legendas já têm formatação própria
+              .replace(/\\caption(?:\[[^\]]*\])?\{[^}]*\}/g, ' ')
               .replace(/\\fonte\{[^}]*\}/g, ' ');
 
             const dashMatch = cleanLine.match(/(\s+---\s+|\s+--\s+|\b\w+---\w+\b|\b\w+--\w+\b)/);
@@ -472,7 +944,7 @@ class TCCChecker {
           });
         }
 
-        // E. Termos rebuscados/arcaicos e substituições recomendadas (skill academic_writing_style)
+        // E. Termos rebuscados/arcaicos
         const archaicTerms = [
           { pattern: /\btece(?:m|r)?\s+(?:as\s+)?considera[çc][õo]es\s+finais\b/gi, suggestion: 'apresenta as considerações finais' },
           { pattern: /\bhipotetiza-se\s+que\b/gi, suggestion: 'a hipótese desta pesquisa é que / pressupõe-se que' },
@@ -486,6 +958,7 @@ class TCCChecker {
         lines.forEach((line, index) => {
           const trimmed = line.trim();
           if (trimmed.startsWith('%')) return;
+          if (/%\s*check-ignore(?::\s*(?:all|archaic|termo))?/i.test(line)) return;
           const codePart = line.split('%')[0];
 
           archaicTerms.forEach(({ pattern, suggestion }) => {
@@ -502,7 +975,7 @@ class TCCChecker {
           });
         });
 
-        // F. Parágrafos excessivamente extensos (> 250 palavras sem quebra de parágrafo)
+        // F. Parágrafos excessivamente extensos (> 250 palavras)
         if (isContentFile) {
           const rawParagraphs = content.split(/\r?\n\s*\r?\n/);
           let currentLineTracker = 1;
@@ -511,9 +984,10 @@ class TCCChecker {
             const parLines = par.split(/\r?\n/);
             const lineCount = parLines.length;
             const startLine = currentLineTracker;
-            currentLineTracker += lineCount + 1; // +1 pela linha em branco divisória
+            currentLineTracker += lineCount + 1;
 
-            // Remove comentários e comandos de ambiente
+            if (/%\s*check-ignore(?::\s*(?:all|dense|paragrafo))?/i.test(par)) return;
+
             const cleanPar = parLines
               .map(l => l.split('%')[0])
               .join(' ')
@@ -535,7 +1009,6 @@ class TCCChecker {
             }
           });
         }
-
       } catch (err) {
         this.report.textAudit.environmentIssues.push({
           file: path.relative(this.rootDir, filePath),
@@ -543,8 +1016,57 @@ class TCCChecker {
           type: 'ERROR',
           message: `Falha ao ler arquivo: ${err.message}`
         });
+        this.bumpError();
       }
     }
+
+    // Auditoria estática prévia de citações (cruza chaves dos .tex com src/referencias.bib)
+    this.checkStaticCitations();
+  }
+
+  checkStaticCitations() {
+    const bibFile = path.join(this.srcDir, 'referencias.bib');
+    if (!fs.existsSync(bibFile)) return;
+
+    try {
+      const bibContent = fs.readFileSync(bibFile, 'utf-8');
+      const knownKeys = new Set();
+      const bibKeyRegex = /@\w+\s*\{\s*([^,\s]+)/g;
+      let bkMatch;
+      while ((bkMatch = bibKeyRegex.exec(bibContent)) !== null) {
+        knownKeys.add(bkMatch[1].trim());
+      }
+
+      const texFiles = this.getTexFiles();
+      const citeRegex = /\\(?:cite|citeonline|textcite|parencite|citep|citet)\*?(?:\[[^\]]*\])?\{([^}]+)\}/g;
+
+      for (const filePath of texFiles) {
+        const content = fs.readFileSync(filePath, 'utf-8');
+        const relPath = path.relative(this.rootDir, filePath).replace(/\\/g, '/');
+        const lines = content.split(/\r?\n/);
+
+        lines.forEach((line, idx) => {
+          if (line.trim().startsWith('%')) return;
+          const codePart = line.split('%')[0];
+          let cMatch;
+          while ((cMatch = citeRegex.exec(codePart)) !== null) {
+            const rawKeys = cMatch[1].split(',').map(k => k.trim()).filter(Boolean);
+            for (const key of rawKeys) {
+              if (!knownKeys.has(key)) {
+                const alreadyReported = this.report.buildDiagnostics.missingCitations.some(c => c.citationKey === key);
+                if (!alreadyReported) {
+                  this.report.buildDiagnostics.missingCitations.push({
+                    citationKey: key,
+                    pages: [`${relPath}:${idx + 1}`]
+                  });
+                  this.bumpError();
+                }
+              }
+            }
+          }
+        });
+      }
+    } catch (e) {}
   }
 
   run() {
@@ -552,6 +1074,9 @@ class TCCChecker {
     const doText = !this.options.buildOnly;
 
     if (doBuild) {
+      this.ensureFreshBuild();
+      // Roda LayoutInspector primeiro para popular o mapa de main.lot / main.lof -> .tex
+      this.checkLayoutAndFloats();
       this.checkBuildLog();
     }
     if (doText) {
@@ -567,7 +1092,6 @@ class TCCChecker {
     console.log(`\n${BOLD}${CYAN}🔍 TCC Checker - Diagnóstico de Compilação, Layout e ABNT${RESET}`);
     console.log(`${CYAN}───────────────────────────────────────────────────────────${RESET}`);
 
-    // Seção de Status do Build
     if (doBuild) {
       this.printSection('1. Diagnóstico do Build & Compilação');
       const b = this.report.buildDiagnostics;
@@ -578,7 +1102,16 @@ class TCCChecker {
       } else {
         if (this.report.summary.pages) {
           const sizeKb = this.report.summary.pdfSizeBytes ? ` (${Math.round(this.report.summary.pdfSizeBytes / 1024)} KB)` : '';
-          console.log(`  ${GREEN}[OK]${RESET} PDF compilado com sucesso: ${BOLD}${this.report.summary.pages} páginas${RESET}${sizeKb}.`);
+          const autoTag = b.autoBuilt ? ` ${GRAY}[auto-build]${RESET}` : '';
+          console.log(`  ${GREEN}[OK]${RESET} PDF compilado com sucesso: ${BOLD}${this.report.summary.pages} páginas${RESET}${sizeKb}.${autoTag}`);
+        }
+
+        if (!b.buildConverged) {
+          console.log(`  ${YELLOW}[AVISO BUILD]${RESET} Compilação pode não ter convergido completamente (main.run.xml ativo). Execute 'make build'.`);
+        }
+
+        if (b.saveErrorFiles.length > 0) {
+          console.log(`  ${YELLOW}[AVISO BUILD]${RESET} Arquivo(s) residual(is) de falha anterior em src/build/: ${b.saveErrorFiles.join(', ')}. Execute 'make clean'.`);
         }
 
         if (b.compilationErrors.length > 0) {
@@ -598,7 +1131,7 @@ class TCCChecker {
         if (b.missingCitations.length > 0) {
           console.log(`  ${RED}[ERRO]${RESET} Citações ausentes no arquivo referencias.bib:`);
           b.missingCitations.forEach(cite => {
-            console.log(`    • \\cite{${cite.citationKey}} citada na(s) página(s): ${cite.pages.join(', ')}`);
+            console.log(`    • \\cite{${cite.citationKey}} localizada em: ${cite.pages.join(', ')}`);
           });
         }
 
@@ -609,21 +1142,47 @@ class TCCChecker {
           });
         }
 
+        if (b.layoutIssues.overfullVbox.length > 0) {
+          console.log(`  ${YELLOW}[LAYOUT - ESTOURO INFERIOR]${RESET} Conteúdo ultrapassando a margem inferior:`);
+          b.layoutIssues.overfullVbox.forEach(ov => {
+            console.log(`    • Página ${BOLD}${ov.page}${RESET}: ${ov.description}`);
+          });
+        }
+
         if (b.layoutIssues.overfullHbox.length > 0) {
           console.log(`  ${YELLOW}[LAYOUT - VAZAMENTO DE MARGEM]${RESET} Elementos ultrapassando a margem direita:`);
-          b.layoutIssues.overfullHbox.slice(0, 5).forEach(oh => {
-            console.log(`    • Linhas ${oh.lines}: ultrapassa margem em ${oh.overflow}`);
+          b.layoutIssues.overfullHbox.slice(0, 8).forEach(oh => {
+            const loc = oh.element
+              ? `${BOLD}${oh.element}${RESET} (${oh.listSource}${oh.file && oh.sourceLine ? ` ➔ ${BOLD}${oh.file}:${oh.sourceLine}${RESET}` : ''})`
+              : (oh.file ? `${BOLD}${oh.file}:${oh.lines}${RESET}` : `Linhas ${oh.lines}`);
+            console.log(`    • ${loc} — ultrapassa margem em ${oh.overflow}`);
+            if (oh.snippet) console.log(`      ${CYAN}Trecho:${RESET} "${oh.snippet}"`);
+            if (oh.suggestion) console.log(`      ${GRAY}➔ Sugestão: ${oh.suggestion}${RESET}`);
           });
-          if (b.layoutIssues.overfullHbox.length > 5) {
-            console.log(`    ... e mais ${b.layoutIssues.overfullHbox.length - 5} ocorrência(s).`);
+          if (b.layoutIssues.overfullHbox.length > 8) {
+            console.log(`    ... e mais ${b.layoutIssues.overfullHbox.length - 8} ocorrência(s).`);
+          }
+        }
+
+        if (b.layoutIssues.underfullHbox.length > 0) {
+          console.log(`  ${CYAN}[SUGESTÃO - ESPAÇAMENTO HORIZONTAL]${RESET} ${b.layoutIssues.underfullHbox.length} linha(s) muito esticada(s) (Underfull \\hbox badness 10000):`);
+          b.layoutIssues.underfullHbox.slice(0, 4).forEach(uh => {
+            const loc = uh.file ? `${uh.file}:${uh.lines}` : `Linhas ${uh.lines}`;
+            console.log(`    • ${loc}${uh.snippet ? ` — "${uh.snippet}"` : ''}`);
+          });
+          if (b.layoutIssues.underfullHbox.length > 4) {
+            console.log(`    ... e mais ${b.layoutIssues.underfullHbox.length - 4} ocorrência(s).`);
           }
         }
 
         if (b.layoutIssues.floatWarnings.length > 0) {
           console.log(`  ${YELLOW}[LAYOUT - FLUTUADORES]${RESET} Ajustes em tabelas/figuras:`);
-          b.layoutIssues.floatWarnings.forEach(fw => {
-            console.log(`    • ${fw.detail}`);
-          });
+          b.layoutIssues.floatWarnings.forEach(fw => console.log(`    • ${fw.detail}`));
+        }
+
+        if (b.pdfInclusionWarnings.length > 0) {
+          console.log(`  ${CYAN}[SUGESTÃO - PDF 1.7]${RESET} ${b.pdfInclusionWarnings.length} figura(s) em versão PDF superior ao limite atual do pdflatex.`);
+          console.log(`    ➔ Sugestão: ${b.pdfInclusionWarnings[0].suggestion}`);
         }
 
         if (b.biberWarnings.length > 0) {
@@ -635,22 +1194,88 @@ class TCCChecker {
           b.generalWarnings.forEach(gw => console.log(`  ${CYAN}[NOTA]${RESET} ${gw}`));
         }
 
-        if (b.compilationErrors.length === 0 && b.missingReferences.length === 0 &&
-            b.missingCitations.length === 0 && b.layoutIssues.underfullVbox.length === 0 &&
-            b.layoutIssues.overfullHbox.length === 0 && b.biberWarnings.length === 0) {
-          console.log(`  ${GREEN}[OK]${RESET} Diagramação, referências e citações limpas, sem anomalias detectadas.`);
+        if (
+          b.compilationErrors.length === 0 &&
+          b.missingReferences.length === 0 &&
+          b.missingCitations.length === 0 &&
+          b.layoutIssues.underfullVbox.length === 0 &&
+          b.layoutIssues.overfullVbox.length === 0 &&
+          b.layoutIssues.overfullHbox.length === 0 &&
+          b.biberWarnings.length === 0 &&
+          b.buildConverged &&
+          b.saveErrorFiles.length === 0
+        ) {
+          console.log(`  ${GREEN}[OK]${RESET} Compilação, margens, referências e citações limpas, sem anomalias detectadas.`);
+        }
+      }
+
+      // Seção 2: Auditoria de Flutuadores & Diagramação
+      this.printSection('2. Auditoria de Flutuadores & Diagramação do PDF');
+      const la = this.report.layoutAudit;
+
+      if (!la.hasAux) {
+        console.log(`  ${YELLOW}[AVISO]${RESET} Arquivo src/build/main.aux não encontrado para mapear flutuadores.`);
+      } else {
+        la.preambleIssues.forEach(pi => {
+          let tag = `${CYAN}[SUGESTÃO CONFIG]${RESET}`;
+          if (pi.severity === 'ERROR') tag = `${RED}[ERRO CONFIG]${RESET}`;
+          else if (pi.severity === 'WARNING') tag = `${YELLOW}[AVISO CONFIG]${RESET}`;
+          console.log(`  ${tag} ${pi.message}`);
+          if (pi.suggestion) console.log(`    ➔ Sugestão: ${pi.suggestion}`);
+        });
+
+        la.figureAspectIssues.forEach(fa => {
+          const tag = fa.severity === 'WARNING' ? `${YELLOW}[PROPORÇÃO FIGURA]${RESET}` : `${CYAN}[SUGESTÃO FIGURA]${RESET}`;
+          console.log(`  ${tag} ${fa.file}: ${fa.message}`);
+          if (fa.suggestion) console.log(`    ➔ Sugestão: ${fa.suggestion}`);
+        });
+
+        la.floatDrifts.forEach(fd => {
+          const tag = fd.severity === 'ERROR' ? `${RED}[FLUTUADOR VAZADO]${RESET}` : `${YELLOW}[FLUTUADOR DESLOCADO]${RESET}`;
+          console.log(`  ${tag} ${fd.message}`);
+          if (fd.suggestion) console.log(`    ➔ Sugestão: ${fd.suggestion}`);
+        });
+
+        la.floatCongestions.forEach(fc => {
+          console.log(`  ${CYAN}[CONGESTIONAMENTO]${RESET} ${fc.message}`);
+        });
+
+        if (this.options.showFloats && la.floatsSummary.length > 0) {
+          console.log(`\n  ${BOLD}Catálogo de Flutuadores Mapeados no PDF (${la.floatsSummary.length} elementos):${RESET}`);
+          console.log(`  ${'Pág.'.padEnd(6)} | ${'Tipo'.padEnd(8)} | ${'Nº'.padEnd(4)} | ${'Espec.'.padEnd(10)} | ${'Origem (.tex)'}`);
+          console.log(`  ${'─'.repeat(6)}─┼─${'─'.repeat(8)}─┼─${'─'.repeat(4)}─┼─${'─'.repeat(10)}─┼─${'─'.repeat(35)}`);
+          la.floatsSummary.forEach(fl => {
+            const spec = fl.especificador ? `[${fl.especificador}]` : '(padrão)';
+            const orig = fl.arquivo ? `${fl.arquivo}:${fl.linha}` : fl.secaoOrigem;
+            console.log(`  ${String(fl.pagina).padEnd(6)} | ${fl.tipo.padEnd(8)} | ${String(fl.numero).padEnd(4)} | ${spec.padEnd(10)} | ${orig}`);
+          });
+          console.log('');
+        }
+
+        if (la.preambleIssues.length === 0 && la.figureAspectIssues.length === 0 && la.floatDrifts.length === 0) {
+          console.log(`  ${GREEN}[OK]${RESET} Preâmbulo calibrado e todos os ${la.floatsSummary.length} flutuadores sincronizados com suas seções.`);
         }
       }
     }
 
-    // Seção de Auditoria Textual ABNT
+    // Seção 3: Auditoria Textual ABNT
     if (doText) {
-      this.printSection('2. Auditoria ABNT e Redação Científica (.tex)');
+      this.printSection(doBuild ? '3. Auditoria ABNT e Redação Científica (.tex)' : '1. Auditoria ABNT e Redação Científica (.tex)');
       const t = this.report.textAudit;
+
+      // Se --text-only, mostra citações ausentes detectadas estaticamente aqui
+      if (!doBuild && this.report.buildDiagnostics.missingCitations.length > 0) {
+        console.log(`  ${RED}[ERRO]${RESET} Citações ausentes no arquivo referencias.bib (análise estática):`);
+        this.report.buildDiagnostics.missingCitations.forEach(cite => {
+          console.log(`    • \\cite{${cite.citationKey}} localizada em: ${cite.pages.join(', ')}`);
+        });
+      }
 
       if (t.environmentIssues.length > 0) {
         t.environmentIssues.forEach(item => {
-          const tag = item.type === 'ERROR' ? `${RED}[ERRO ABNT]${RESET}` : `${YELLOW}[AVISO ABNT]${RESET}`;
+          let tag = `${YELLOW}[AVISO ABNT]${RESET}`;
+          if (item.type === 'ERROR') tag = `${RED}[ERRO ABNT]${RESET}`;
+          if (item.type === 'SUGGESTION') tag = `${CYAN}[SUGESTÃO ABNT]${RESET}`;
           console.log(`  ${tag} ${item.file}:${item.line} - ${item.message}`);
         });
       }
@@ -698,9 +1323,14 @@ class TCCChecker {
         });
       }
 
-      if (t.environmentIssues.length === 0 && t.repeatedWords.length === 0 && 
-          t.impersonalToneIssues.length === 0 && t.prohibitedDashes.length === 0 &&
-          t.archaicTermIssues.length === 0 && t.denseParagraphIssues.length === 0) {
+      if (
+        t.environmentIssues.length === 0 &&
+        t.repeatedWords.length === 0 &&
+        t.impersonalToneIssues.length === 0 &&
+        t.prohibitedDashes.length === 0 &&
+        t.archaicTermIssues.length === 0 &&
+        t.denseParagraphIssues.length === 0
+      ) {
         console.log(`  ${GREEN}[OK]${RESET} Figuras, tabelas e redação seguem integralmente o padrão ABNT e as diretrizes de estilo.`);
       }
     }
@@ -729,8 +1359,10 @@ function parseArgs() {
   const args = process.argv.slice(2);
   const options = {
     json: args.includes('--json'),
+    noBuild: args.includes('--no-build'),
     buildOnly: args.includes('--build-only') || args.includes('-b'),
     textOnly: args.includes('--text-only') || args.includes('-t'),
+    showFloats: args.includes('--floats') || args.includes('-f'),
     help: args.includes('--help') || args.includes('-h')
   };
 
@@ -739,10 +1371,12 @@ function parseArgs() {
 Uso: node scripts/check.js [opções]
 
 Opções:
-  --json          Emite o relatório estruturado em formato JSON (ótimo para IAs e automação)
-  --build-only    Executa apenas o diagnóstico de compilação, layout e log
-  --text-only     Executa apenas a auditoria ABNT nos arquivos .tex
-  --help          Exibe esta mensagem de ajuda
+  --json            Emite o relatório estruturado em formato JSON (ótimo para IAs e automação)
+  --no-build        Audita o último log existente sem disparar auto-build
+  --floats, -f      Exibe o catálogo completo de flutuadores (tabelas e figuras) mapeados no PDF
+  --build-only, -b  Executa apenas o diagnóstico de compilação, layout e flutuadores
+  --text-only, -t   Executa apenas a auditoria ABNT nos arquivos .tex (sem compilar)
+  --help, -h        Exibe esta mensagem de ajuda
     `);
     process.exit(0);
   }

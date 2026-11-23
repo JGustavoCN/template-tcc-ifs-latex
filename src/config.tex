@@ -9,6 +9,7 @@
 \ifPDFTeX
     \usepackage[utf8]{inputenc}
     \usepackage[T1]{fontenc}
+    \pdfminorversion=7 % Permite incluir figuras PDF 1.7 (Python, Mermaid, Inkscape, Canva) sem avisos
 \fi
 
 % --- Fonte acadêmica moderna: Palatino ---
@@ -35,6 +36,18 @@
 \usepackage{array}
 \usepackage{longtable}
 \usepackage{siunitx}
+\usepackage[section,below]{placeins}
+\usepackage{etoolbox}
+\pretocmd{\subsection}{\FloatBarrier}{}{} % Impede flutuadores de vazarem para a subseção seguinte
+
+% --- Parâmetros de Diagramação de Flutuadores (Tabelas e Figuras) ---
+\renewcommand{\topfraction}{0.85}
+\renewcommand{\bottomfraction}{0.70}
+\renewcommand{\textfraction}{0.15}
+\renewcommand{\floatpagefraction}{0.70}
+\setcounter{topnumber}{3}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{5}
 
 % Configuração nativa do memoir para legendas ABNT (evita usar o pacote caption que conflita)
 \captionnamefont{\small\bfseries}
@@ -121,6 +134,7 @@
 
 \widowpenalty=10000
 \clubpenalty=10000
+\brokenpenalty=10000 % Impede palavras hifenizadas quebrando entre viradas de página
 
 % --- Estilização Acadêmica Sóbria ---
 \renewcommand{\ABNTEXchapterfont}{\normalfont\bfseries}
@@ -146,6 +160,8 @@
 \renewcommand{\cftdot}{.}
 \renewcommand{\cftdotsep}{3}
 \setlength{\cftbeforechapterskip}{0.3em}
+\setpnumwidth{2.5em} % Espaço garantido para numeração de páginas com 3 dígitos nas listas
+\setrmarg{3.5em plus 1fil} % Alinhamento flexível nas listas (ToC/LoF/LoT) para evitar corte de página por Overfull \hbox
 
 % ==================================================================
 % MACROS DE IMPRESSÃO (CAPA E FOLHA DE ROSTO IFS)

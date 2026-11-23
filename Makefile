@@ -2,9 +2,13 @@
 ifeq ($(OS),Windows_NT)
   WHICH = where
   DEVNUL = >nul 2>&1
+  SET_LOG_WIDTH = set max_print_line=10000 &&
+  RM_SAVE_ERR = del /q "$(SRC_DIR)\$(BUILD_DIR)\*-SAVE-ERROR" $(DEVNUL) || true
 else
   WHICH = which
   DEVNUL = >/dev/null 2>&1
+  SET_LOG_WIDTH = max_print_line=10000
+  RM_SAVE_ERR = rm -f "$(SRC_DIR)/$(BUILD_DIR)"/*-SAVE-ERROR $(DEVNUL) || true
 endif
 
 # Variáveis do projeto
@@ -18,7 +22,8 @@ PDF_FIGURES = $(patsubst $(FIGURES_DIR)/%.mmd, $(FIGURES_DIR)/%.pdf, $(MMD_FILES
 
 # Comandos de build usando latexmk
 # O latexmk resolve todas as dependências e múltiplas compilações
-BUILD_CMD = latexmk -pdf -silent -interaction=nonstopmode -outdir=$(BUILD_DIR) -cd $(SRC_DIR)/$(MAIN_FILE)
+# max_print_line=10000 evita quebra de caminhos de arquivo na coluna 79 do main.log
+BUILD_CMD = $(SET_LOG_WIDTH) latexmk -pdf -silent -interaction=nonstopmode -outdir=$(BUILD_DIR) -cd $(SRC_DIR)/$(MAIN_FILE)
 CLEAN_CMD = latexmk -c -outdir=$(BUILD_DIR) -cd $(SRC_DIR)/$(MAIN_FILE)
 CLEAN_ALL_CMD = latexmk -C -outdir=$(BUILD_DIR) -cd $(SRC_DIR)/$(MAIN_FILE)
 
@@ -44,7 +49,7 @@ $(FIGURES_DIR)/%.pdf: $(FIGURES_DIR)/%.mmd
 	@-$(WHICH) pdfcrop $(DEVNUL) && pdfcrop "$@" "$@" $(DEVNUL) || true
 
 check:
-	@node scripts/check.js
+	@node scripts/check.js $(ARGS)
 
 verify: check
 
@@ -57,11 +62,13 @@ update:
 clean:
 	@echo "Limpando arquivos auxiliares..."
 	@$(CLEAN_CMD)
+	@-$(RM_SAVE_ERR)
 	@echo "Limpeza de arquivos auxiliares concluída."
 
 cleanall:
 	@echo "Limpando todos os arquivos gerados (incluindo PDF)..."
 	@$(CLEAN_ALL_CMD)
+	@-$(RM_SAVE_ERR)
 	@echo "Limpeza total concluída."
 
 help:
