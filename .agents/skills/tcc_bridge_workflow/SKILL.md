@@ -1,45 +1,73 @@
 ---
 name: O Fluxo Supremo de Edição e Deploy (TCC-Bridge)
-description: Workflow passo a passo para sincronização ponta a ponta - do Google Docs para o repositório local, Google Drive e GitHub (CI/CD).
+description: Workflow passo a passo (v2.0.0) para sincronização ponta a ponta entre comentários do orientador no Google Docs, repositório LaTeX local, Google Drive e GitHub (CI/CD), quando o servidor opcional mcp-gdocs está conectado.
 ---
 
-# O Fluxo Supremo de Edição e Deploy (TCC-Bridge)
+# O Fluxo Supremo de Edição e Deploy (TCC-Bridge v2.0.0)
 
 ## Objective
 
-Processar os comentários do orientador deixados no Google Docs, aplicar as correções no arquivo fonte LaTeX localmente, recompilar o PDF, sincronizar para o Google Drive e realizar o deploy final via GitHub Actions.
+Processar comentários do orientador deixados no Google Docs, propor revisões seguras com preservação da autoria intelectual, aplicar as correções aprovadas no LaTeX local e no Google Docs, validar compilação/geometria via `make check` + `make preview`, sincronizar o PDF no Google Drive (com paridade MD5) e preparar o fechamento no Git.
+
+> **Pré-requisito opcional:** Este workflow exige que o servidor MCP `mcp-gdocs` (`mcp-gdocs-latex` v2.0.0) esteja conectado. Caso não esteja ativo na sessão, consulte `.agents/skills/mcp_gdocs_guide/SKILL.md` para orientar o setup em 3 passos ou opere em modo 100% local.
+
+---
 
 ## Step-by-Step Workflow
 
-Siga ESTRITAMENTE esta ordem quando o usuário pedir para corrigir comentários do orientador:
+Siga esta ordem quando o usuário solicitar o processamento de comentários do orientador e sincronização completa:
 
-1. **Mapeamento:** Execute a tool `list_doc_comments` para ler os feedbacks pendentes.
-2. **Raio-X & Leitura:** Execute `get_doc_skeleton` e `read_doc_content` para ler cirurgicamente o trecho a ser modificado.
-3. **Edição Dupla:**
-   - Altere o arquivo `.tex` no repositório local.
-   - Espelhe a alteração na nuvem seguindo estas regras de decisão:
-     - **Regra 1 (Texto Simples):** Quer apenas corrigir um erro de digitação ou trocar uma palavra sem mudar o visual? Use `search_and_replace_text`.
-     - **Regra 2 (Estilo Cirúrgico - NOVA):** Quer apenas colocar uma palavra existente em itálico ou negrito? Use `search_in_doc` para pegar os índices exatos e envie para a ferramenta `apply_text_style`. Essa é a forma mais segura de formatar palavras isoladas sem esbarrar em bloqueios de comentários do parágrafo.
-     - **Regra 3 (Reescrita Estrutural):** O orientador pediu para reescrever a frase ou aplicar formatação em múltiplos trechos de um parágrafo novo? Use `update_block_by_index`, enviando o bloco inteiro com o `\n` no final. (Sujeito à trava de comentários).
-4. **Build Local:** Use o terminal para executar `make build`. Se houver erro, aplique a [Skill: Triagem de Erros] e recompile.
-5. **Limpeza OBRIGATÓRIA:** Após o sucesso, execute `make clean` no terminal para apagar os arquivos temporários, mantendo o git limpo.
-6. **Deploy Google Drive:** Execute a [Skill: Health Check e Setup de Upload] para achar o ID, e use `sync_pdf_to_drive` para atualizar a nuvem.
-7. **Fechamento Docs:** Use `reply_to_comment` ou `resolve_comment` informando ao orientador que a correção foi aplicada.
-8. **Deploy CI/CD (GitHub Actions):** Gere a mensagem usando a [Skill: Relatório de Fechamento] e execute os comandos de terminal `git add .`, `git commit -m "..."` e `git push` para acionar a publicação no GitHub Pages e a criação da Release.
+1. **Descoberta & Mapeamento de Comentários:**
+   - Se o ID do documento ainda não for conhecido, execute `list_available_documents` (retorna JSON HATEOAS com `data.docs` e `data.pdfs`).
+   - Execute `manage_doc_comments(document_url_or_id, action="list", only_unresolved=true)` para listar os feedbacks pendentes e sua localização (`doc_location`).
 
-## Diretrizes de Parsing (LaTeX ➡️ Google Docs)
+2. **Raio-X Estrutural & Leitura Cirúrgica:**
+   - Use `compare_latex_with_doc(document_url_or_id, tcc_dir="<raiz do repo>")` (ou `get_doc_skeleton`) para mapear o vínculo exato entre o Google Doc e os capítulos em `src/capitulos/`.
+   - Use `read_doc_content(document_url_or_id, section_title="...")` para ler apenas as seções afetadas sem inflar o contexto.
 
-- **Citações (`\cite`, `\textcite`):** Substituir pela formatação estática correspondente em ABNT (ex: `(FEITOZA, 2021)` ou `Segundo Feitoza (2021)`) no Payload JSON.
-- **Listas (`\begin{itemize}`, `\begin{enumerate}`):** Converter os itens (`\item`) para parágrafos `NORMAL_TEXT` prefixados com um hífen simples (`-`), ignorando a indentação complexa do Docs.
-- **Elementos Visuais Complexos (`\begin{figure}`, `\begin{table}`, `\begin{equation}`):** A API do Google Docs não suporta injeção direta de imagens via texto. Sempre que encontrar esses ambientes no LaTeX, você DEVE substituí-los por um "Deep Link" apontando para o PDF no Drive:
-  1. Se você não tem o ID do PDF em memória, use a ferramenta `list_available_documents` para capturar o ID do PDF de entrega.
-  2. Construa a URL de visualização: `https://drive.google.com/file/d/[ID_DO_PDF]/view`
-  3. No payload JSON de substituição (`update_block_by_index`), gere o bloco exatamente assim:
-     `{"text": "[VER IMAGEM/TABELA NO PDF COMPILADO]\n", "paragraph_style": "NORMAL_TEXT", "text_style": "BOLD", "link_url": "URL_CONSTRUIDA_AQUI"}`
-  4. *Regra de Sincronia:* Para que o link exiba a imagem correta, garanta que você já executou `make build` e `sync_pdf_to_drive` para atualizar o PDF na nuvem na iteração atual.
-- **Resolução de Comentários (Ação Anti-Bloqueio):** Se a ferramenta de substituição de texto retornar o erro "BLOCKED", você DEVE usar o ID fornecido na mensagem de erro para acionar a ferramenta `resolve_comment`. Somente após resolver o comentário, execute a substituição de texto novamente na mesma iteração.
+3. **Revisão Visual e Consentimento (Obrigatório para Mudanças Semânticas):**
+   - **Nunca** altere a semântica, reescreva parágrafos autorais ou resolva comentários de conteúdo sem aprovação explícita do usuário (ver `.agents/rules/autonomia.md`).
+   - Para propostas de reescrita ou resposta a críticas teóricas do orientador, ative `.agents/skills/change_review/SKILL.md` (Antes vs. Depois) e aguarde confirmação antes de editar.
+
+4. **Edição Dupla (LaTeX Local + Espelhamento ABNT no Google Docs):**
+   - Aplique as alterações aprovadas nos arquivos em `src/capitulos/` (e em `src/referencias.bib` se houver novas referências).
+   - Espelhe no Google Docs **sempre do maior índice para o menor (de baixo para cima)** escolhendo a ferramenta ortogonal correta da v2.0.0:
+     - **Texto simples global:** `search_and_replace_text`.
+     - **Estilo cirúrgico (negrito/itálico em trecho existente):** `search_in_doc` → `apply_text_style`.
+     - **Substituição de bloco/parágrafo ABNT:** `replace_block_abnt` **sempre com `expected_text`** (trava otimista, anti-bleeding e preservação automática de `**negrito**` e `*itálico*`).
+     - **Tabelas LaTeX:** `insert_native_table` passando `latex_table` (ou `headers` + `rows`), `caption` e `source` (padrão IBGE/ABNT nativo).
+     - **Diagramas Mermaid / Figuras:** `insert_mermaid_diagram` (renderização via `mermaid.ink` ou PNG local com 2D Bounding Box).
+     - **Referências / Sumário / Auditoria Docs:** se `.bib` ou títulos mudaram, execute `format_bibliography_abnt`, `sync_abnt_front_matter_lists` e `lint_document_abnt`.
+
+5. **Build, Auditoria Geométrica e Prévia Local (ANTES de limpar!):**
+   - Execute `.\make.bat check --json` (ou `make check --json`), que aciona o auto-build com `latexmk`, verifica logs, flutuadores e executa a auditoria geométrica do PDF (`pdftotext` / `PyMuPDF`).
+   - Se houver erros ou avisos de layout/geometria, siga `.agents/skills/error_triage/SKILL.md` e inspecione visualmente com `.\make.bat preview --issues` (ou `.\make.bat preview <pag>`).
+   - Somente após validação limpa, execute `make clean` (`.\make.bat clean`).
+
+6. **Deploy Idempotente no Google Drive:**
+   - Execute `.agents/skills/health_check/SKILL.md` (`list_available_documents` + `check_pdf_sync`).
+   - Se o status for diferente de `IN_SYNC`, execute `sync_pdf_to_drive` apontando para `src/build/main.pdf` (validação `%%EOF`, guarda TOCTOU e `keepRevisionForever: true`).
+
+7. **Fechamento de Comentários no Docs (Somente com Aprovação):**
+   - Somente após aprovação expressa do usuário sobre a resposta/resolução de cada comentário, acione `manage_doc_comments(action="reply", ...)` e/ou `manage_doc_comments(action="resolve", ...)`.
+   - **Regra Anti-Bloqueio:** Se uma mutação retornar bloqueio por comentário, **PARE** e reporte o `comment_id` ao usuário antes de resolver qualquer comentário.
+
+8. **Fechamento e Entrega (Git / CI/CD):**
+   - Gere o resumo padronizado via `.agents/skills/iteration_report/SKILL.md`.
+   - Sugira (ou execute, se autorizado pelo usuário) `git add`, `git commit` e `git push` para atualizar o GitHub Pages e Releases — nunca faça `git push` com `make check` quebrado.
+
+---
+
+## Diretrizes de Conversão (LaTeX ➡️ Google Docs)
+
+- **Citações (`\cite`, `\textcite`, `\citeonline`):** Converter para o formato ABNT correspondente no texto do Docs (ex.: `(SILVA, 2026)` ou `Silva (2026)`) e sincronizar a lista completa em `REFERÊNCIAS` via `format_bibliography_abnt`.
+- **Destaques inline (`\textbf`, `\textit`, `\emph`):** Enviar como `**negrito**`, `*itálico*` ou `***negrito e itálico***` para `replace_block_abnt` (que preserva `WeightedFontFamily.Weight = 700`).
+- **Tabelas (`\begin{tabular}`, `tabularx`) e Quadros:** Usar `insert_native_table` diretamente em vez de links provisórios.
+- **Diagramas Mermaid (`.mmd`) e Figuras (`.png`):** Usar `insert_mermaid_diagram` diretamente.
 
 ## Boundaries
 
-- ✅ **Always:** Siga a ordem exata das 8 etapas sem pular nenhuma.
-- 🚫 **Never:** Não faça o `git push` se o `make build` falhar.
+- ✅ **Always:** Valide o PDF com `make check` antes de `make clean` e antes de `sync_pdf_to_drive`.
+- ✅ **Always:** Passe `expected_text` em toda chamada a `replace_block_abnt`.
+- 🚫 **Never:** Nunca resolva comentários de conteúdo do orientador automaticamente sem permissão do usuário.
+- 🚫 **Never:** Nunca faça `git push` ou upload de PDF se a compilação falhar ou o `check_pdf_sync` indicar PDF corrompido (sem `%%EOF`).

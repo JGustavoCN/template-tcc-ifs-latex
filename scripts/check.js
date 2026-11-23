@@ -106,6 +106,7 @@ class TCCChecker {
         marginOverflows: [],
         bottomOverflows: [],
         splitParagraphs: [],
+        hyphenatedPageBreaks: [],
         inkOverflows: [],
         hint: null
       },
@@ -801,6 +802,9 @@ class TCCChecker {
     geo.splitParagraphs.forEach(() => {
       this.bumpWarning();
     });
+    (geo.hyphenatedPageBreaks || []).forEach(() => {
+      this.report.summary.suggestionsCount++;
+    });
     geo.inkOverflows.forEach(item => {
       if (item.severity === 'ERROR') this.bumpError();
       else this.bumpWarning();
@@ -1355,12 +1359,23 @@ class TCCChecker {
           }
 
           if (g.splitParagraphs.length > 0) {
-            console.log(`  ${YELLOW}[GEOMETRIA - PARÁGRAFO PARTIDO]${RESET} ${g.splitParagraphs.length} flutuador(es) aparentando cortar frases ao meio:`);
+            console.log(`  ${YELLOW}[GEOMETRIA - FLUTUADOR CORTANDO TEXTO/LISTA]${RESET} ${g.splitParagraphs.length} ocorrência(s):`);
             g.splitParagraphs.forEach(sp => {
-              console.log(`    • Pág. ${BOLD}${sp.page}${RESET}: ${sp.floatTitle}`);
+              console.log(`    • ${sp.message}`);
               console.log(`      ${GRAY}Antes:${RESET} "${sp.beforeSnippet}" | ${GRAY}Depois:${RESET} "${sp.afterSnippet}"`);
               console.log(`      ${GRAY}➔ Sugestão: ${sp.suggestion}${RESET}`);
             });
+          }
+
+          if ((g.hyphenatedPageBreaks || []).length > 0) {
+            console.log(`  ${CYAN}[SUGESTÃO - HIFENIZAÇÃO EM QUEBRA DE PÁGINA]${RESET} ${g.hyphenatedPageBreaks.length} palavra(s) partida(s) entre páginas:`);
+            g.hyphenatedPageBreaks.slice(0, 6).forEach(hb => {
+              console.log(`    • ${hb.message}`);
+            });
+            if (g.hyphenatedPageBreaks.length > 6) {
+              console.log(`    ... e mais ${g.hyphenatedPageBreaks.length - 6} ocorrência(s).`);
+            }
+            console.log(`    ${GRAY}➔ Sugestão: ${g.hyphenatedPageBreaks[0].suggestion}${RESET}`);
           }
 
           if (g.inkOverflows.length > 0) {
@@ -1374,10 +1389,11 @@ class TCCChecker {
             g.marginOverflows.length === 0 &&
             g.bottomOverflows.length === 0 &&
             g.splitParagraphs.length === 0 &&
+            (g.hyphenatedPageBreaks || []).length === 0 &&
             g.inkOverflows.length === 0
           ) {
             const inkNote = g.inkEngine ? ` + tinta real (${g.inkEngine})` : '';
-            console.log(`  ${GREEN}[OK]${RESET} ${g.pagesAnalyzed} páginas inspecionadas (xMax máx: ${g.maxXRightPt}pt / limite ABNT: ${g.rightLimitPt}pt${inkNote}). Nenhum corte de margem ou parágrafo partido.`);
+            console.log(`  ${GREEN}[OK]${RESET} ${g.pagesAnalyzed} páginas inspecionadas (xMax máx: ${g.maxXRightPt}pt / limite ABNT: ${g.rightLimitPt}pt${inkNote}). Nenhum corte de margem, hifenização em virada ou parágrafo partido.`);
           }
         }
       }

@@ -274,13 +274,17 @@ function isRunningHeaderOrPageNumber(block) {
   return false;
 }
 
+function isListItemStart(text) {
+  return /^(?:\d+[.)]\s+|\(?[a-z]\)\s+|[•●◦▪–—-]\s+)/i.test(text.trim());
+}
+
 function isHeadingOrListLike(block) {
   const txt = block.text.trim();
   // Títulos numerados (ex: "1 INTRODUÇÃO", "2.1 Conceitos") ou CAIXA ALTA
   if (/^\d+(?:\.\d+)*\s+[A-ZÀ-Ú]/.test(txt) && txt.length < 140) return true;
   if (txt === txt.toUpperCase() && /[A-ZÀ-Ú]{4,}/.test(txt) && txt.length < 120) return true;
   // Itens de lista / alíneas / marcadores
-  if (/^(?:[•●◦▪–—-]|\(?[a-z]\)|[ivx]+\))\s+/i.test(txt)) return true;
+  if (isListItemStart(txt)) return true;
   return false;
 }
 
@@ -298,6 +302,7 @@ function inspectPdfGeometry(pdfPath, options = {}) {
     marginOverflows: [],
     bottomOverflows: [],
     splitParagraphs: [],
+    hyphenatedPageBreaks: [],
     inkOverflows: [],
     hint: null
   };
@@ -340,6 +345,9 @@ function inspectPdfGeometry(pdfPath, options = {}) {
   // Determina a partir de qual página começa o corpo textual (ex: Capítulo 1) para a regra de corte de parágrafo
   const firstTextualPage = options.firstTextualPage || 1;
   const referencePages = new Set(options.referencePages || []);
+
+  // Armazena o último bloco de prosa da página anterior para detectar cortes entre páginas (p-1 -> p)
+  let prevPageInfo = null;
 
   for (const page of pages) {
     const rightLimit = page.width - ABNT_RIGHT_PT;
@@ -390,13 +398,41 @@ function inspectPdfGeometry(pdfPath, options = {}) {
     pageOverflows.sort((a, b) => b.excessPt - a.excessPt);
     result.marginOverflows.push(...pageOverflows.slice(0, 3));
 
-    // 2. Flutuador cortando parágrafo ao meio (apenas no corpo textual, fora de referências)
+    // 2. Flutuador cortando parágrafo/lista (mesma página OU topo da página cruzando p-1 -> p)
+    //    e hifenização atravessando quebra de página (p-1 -> p)
     if (page.page >= firstTextualPage && !referencePages.has(page.page)) {
       const contentBlocks = page.blocks
         .filter(b => !isRunningHeaderOrPageNumber(b))
         .sort((a, b) => a.yMin - b.yMin);
 
-      // Identifica intervalos [startIdx..endIdx] correspondentes a flutuadores na página
+      // 2a. Checa hifenização simples atravessando a virada de página (p-1 -> p)
+      if (prevPageInfo && prevPageInfo.page === page.page - 1 && prevPageInfo.lastProseBlock && contentBlocks.length > 0) {
+        const prevTxt = prevPageInfo.lastProseBlock.text.trim();
+        const firstBlock = contentBlocks[0];
+        const firstTxt = firstBlock.text.trim();
+        const hyphenEndMatch = prevTxt.match(/([A-Za-zÀ-ÖØ-öø-ÿ]{2,})-$/);
+        const firstWordMatch = firstTxt.match(/^([a-zà-öø-ÿ]{2,})/);
+
+        if (
+          hyphenEndMatch &&
+          firstWordMatch &&
+          !isFloatCaptionBlock(firstTxt) &&
+          !isFloatSourceBlock(firstTxt) &&
+          !isHeadingOrListLike(firstBlock)
+        ) {
+          result.hyphenatedPageBreaks.push({
+            page: prevPageInfo.page,
+            nextPage: page.page,
+            wordEnd: `${hyphenEndMatch[1]}-`,
+            wordStart: firstWordMatch[1],
+            message: `Páginas ${prevPageInfo.page}–${page.page}: palavra hifenizada atravessando virada de página ("${hyphenEndMatch[1]}-" / "${firstWordMatch[1]}").`,
+            suggestion: 'Verifique se \\brokenpenalty=10000 está ativo em src/config.tex ou ajuste a quebra do parágrafo.'
+          });
+        }
+      }
+
+      // 2b. Identifica intervalos [startIdx..endIdx] correspondentes a flutuadores na página
+      const floatRanges = [];
       let i = 0;
       while (i < contentBlocks.length) {
         if (isFloatCaptionBlock(contentBlocks[i].text)) {
@@ -417,7 +453,13 @@ function inspectPdfGeometry(pdfPath, options = {}) {
             }
           }
 
-          const prevBlock = floatStart > 0 ? contentBlocks[floatStart - 1] : null;
+          floatRanges.push([floatStart, floatEnd]);
+
+          // Se o flutuador está no topo da página (floatStart === 0), usa o último bloco da página anterior (p-1)
+          const crossPage = floatStart === 0 && prevPageInfo && prevPageInfo.page === page.page - 1;
+          const prevBlock = floatStart > 0
+            ? contentBlocks[floatStart - 1]
+            : (crossPage ? prevPageInfo.lastProseBlock : null);
           const nextBlock = floatEnd + 1 < contentBlocks.length ? contentBlocks[floatEnd + 1] : null;
 
           if (prevBlock && nextBlock) {
@@ -425,30 +467,48 @@ function inspectPdfGeometry(pdfPath, options = {}) {
             const nextText = nextBlock.text.trim();
 
             const prevLooksLikeProse =
-              prevText.length >= 35 &&
+              prevText.length >= 30 &&
               !isHeadingOrListLike(prevBlock) &&
               !isFloatSourceBlock(prevText) &&
               !isFloatCaptionBlock(prevText);
 
-            const nextLooksLikeProse =
-              nextText.length >= 20 &&
-              !isHeadingOrListLike(nextBlock) &&
-              !isFloatSourceBlock(nextText) &&
-              !isFloatCaptionBlock(nextText);
+            const nextNotFloat = !isFloatSourceBlock(nextText) && !isFloatCaptionBlock(nextText);
+            const nextLooksLikeProse = nextText.length >= 18 && !isHeadingOrListLike(nextBlock) && nextNotFloat;
 
             const prevEndsMidSentence = !/[.?!:;»”"'\]]$/.test(prevText);
+            const prevEndsHyphen = /[A-Za-zÀ-ÖØ-öø-ÿ]{2,}-$/.test(prevText);
             const nextStartsLowercase = /^[a-zà-öø-ÿ]/.test(nextText);
 
-            if (prevLooksLikeProse && nextLooksLikeProse && prevEndsMidSentence && nextStartsLowercase) {
+            // Caso A: Flutuador cortando parágrafo ou palavra hifenizada ao meio (mesma página ou topo de p após p-1)
+            if (prevLooksLikeProse && nextLooksLikeProse && (prevEndsMidSentence || prevEndsHyphen) && nextStartsLowercase) {
               const tail = prevText.slice(-55);
               const head = nextText.slice(0, 55);
+              const pageLabel = crossPage ? `Páginas ${prevPageInfo.page}–${page.page} (topo)` : `Página ${page.page}`;
               result.splitParagraphs.push({
                 page: page.page,
+                kind: prevEndsHyphen ? 'HYPHEN_SPLIT' : 'PARAGRAPH_SPLIT',
+                crossPage: !!crossPage,
                 floatTitle,
                 beforeSnippet: `...${tail}`,
                 afterSnippet: `${head}...`,
-                message: `Página ${page.page}: flutuador ("${floatTitle}") aparenta cortar um parágrafo ao meio.`,
-                suggestion: 'Use [!htbp] ou mova a declaração do flutuador para depois do ponto final do parágrafo.'
+                message: `${pageLabel}: flutuador ("${floatTitle}") aparenta cortar um parágrafo${prevEndsHyphen ? ' (palavra hifenizada)' : ''} ao meio.`,
+                suggestion: 'Insira \\FloatBarrier antes do parágrafo/subseção ou reposicione a declaração do flutuador após o ponto final.'
+              });
+            }
+            // Caso B: Flutuador separando frase introdutória terminada em ":" da lista numerada/com marcadores
+            else if (prevLooksLikeProse && nextNotFloat && /:\s*$/.test(prevText) && isListItemStart(nextText)) {
+              const tail = prevText.slice(-55);
+              const head = nextText.slice(0, 55);
+              const pageLabel = crossPage ? `Páginas ${prevPageInfo.page}–${page.page} (topo)` : `Página ${page.page}`;
+              result.splitParagraphs.push({
+                page: page.page,
+                kind: 'LIST_SPLIT',
+                crossPage: !!crossPage,
+                floatTitle,
+                beforeSnippet: `...${tail}`,
+                afterSnippet: `${head}...`,
+                message: `${pageLabel}: flutuador ("${floatTitle}") separa uma frase terminada em ":" do início da lista seguinte.`,
+                suggestion: 'Insira \\FloatBarrier antes da frase introdutória ou mova o flutuador para depois da lista.'
               });
             }
           }
@@ -458,6 +518,24 @@ function inspectPdfGeometry(pdfPath, options = {}) {
           i++;
         }
       }
+
+      // Guarda o último bloco de prosa da página (ignorando se a página terminou em flutuador ou título)
+      const lastIdx = contentBlocks.length - 1;
+      const lastInFloat = floatRanges.some(([s, e]) => lastIdx >= s && lastIdx <= e);
+      const lastBlock = lastIdx >= 0 && !lastInFloat ? contentBlocks[lastIdx] : null;
+      const lastIsProse =
+        lastBlock &&
+        lastBlock.text.trim().length >= 30 &&
+        !isHeadingOrListLike(lastBlock) &&
+        !isFloatCaptionBlock(lastBlock.text) &&
+        !isFloatSourceBlock(lastBlock.text);
+
+      prevPageInfo = {
+        page: page.page,
+        lastProseBlock: lastIsProse ? lastBlock : null
+      };
+    } else {
+      prevPageInfo = null;
     }
   }
 

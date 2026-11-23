@@ -77,6 +77,18 @@ Sempre utilize o Makefile (ou `make.bat` no Windows). **Nunca execute comandos m
 
 ---
 
+## 🔌 Integração Opcional: Servidor MCP Google Docs ↔ LaTeX (`mcp-gdocs-latex`)
+
+Este repositório funciona **100% localmente** (sem precisar de Google Docs/Drive), mas é nativamente compatível com o servidor MCP opcional **[mcp-gdocs-latex](https://github.com/JGustavoCN/mcp-gdocs-latex)** (v2.0.0, registrado normalmente como `mcp-gdocs`), escrito em Go com **20 ferramentas ortogonais** e resposta HATEOAS (`{ok, tool, summary, data, next_actions}`).
+
+1. **Como agir conforme a disponibilidade na sessão:**
+   - **Se o servidor `mcp-gdocs` ESTIVER conectado:** você pode ler/responder/resolver comentários do orientador (`manage_doc_comments`), comparar LaTeX × Docs (`get_tcc_latex_structure`, `compare_latex_with_doc`), inicializar ou formatar Docs ABNT (`init_doc_abnt`, `format_document_abnt`, `replace_block_abnt`), inserir tabelas IBGE e diagramas Mermaid nativos (`insert_native_table`, `insert_mermaid_diagram`), sincronizar referências NBR 6023 (`format_bibliography_abnt`) e Sumário/Listas NBR 6027 (`sync_abnt_front_matter_lists`), auditar (`lint_document_abnt`, `inspect_doc_layout`) e publicar PDFs com paridade MD5 (`check_pdf_sync`, `sync_pdf_to_drive`).
+   - **Se o servidor `mcp-gdocs` NÃO estiver conectado:** opere normalmente no fluxo local (`make build`, `make check`, `make portal`, `make diff`, GitHub Pages/Releases). Se o usuário solicitar sincronização com Google Docs/Drive ou leitura de comentários no Docs, informe que existe a integração opcional `mcp-gdocs-latex` e consulte `.agents/skills/mcp_gdocs_guide/SKILL.md` para orientar o setup em 3 passos.
+2. **Descoberta automática de `src/`:** ao informar `tcc_dir`, passe a **raiz deste repositório** — o `mcp-gdocs-latex` v2.0.0 promove `src/main.tex`, `src/metadados.tex`, `src/referencias.bib` e `src/logo_ifs.png` automaticamente.
+3. **Travas obrigatórias:** siga `.agents/rules/mcp_gdocs.md` e `.agents/rules/autonomia.md` (sempre passe `expected_text` em `replace_block_abnt`; nunca use `confirm_overwrite: true` ou resolva comentários de conteúdo sem aprovação explícita).
+
+---
+
 ## 🚀 Uso dos Recursos do Antigravity (Skills & Customizações)
 
 Sempre que surgirem dúvidas arquiteturais ou necessidade de expansão da infraestrutura do agente, utilize e consulte:
@@ -94,15 +106,18 @@ Sempre que surgirem dúvidas arquiteturais ou necessidade de expansão da infrae
 - `src/figuras/` – **Diagramas e Ilustrações.** Contém arquivos Mermaid (`.mmd`), PDFs vetoriais e imagens.
 - `src/referencias.bib` – **Base Bibliográfica.** Catálogo de todas as referências citadas no trabalho.
 - `src/config.tex` e `src/pre-textuais.tex` – **Área Restrita (Template).** Configurações institucionais do IFS e ABNT.
-- `.agents/rules/` – Regras comportamentais persistentes carregadas automaticamente (`mode: always`).
+- `.agents/rules/` – Regras comportamentais persistentes carregadas automaticamente (`mode: always`):
+  1. `autonomia.md` – Preservação rigorosa da autoria intelectual e consentimento.
+  2. `mcp_gdocs.md` – Detecção e contrato operacional da integração opcional com `mcp-gdocs-latex` (v2.0.0).
 - `.agents/skills/` – Habilidades modulares ativadas sob demanda (*progressive disclosure*):
   1. `bibliographic_research` – Workflow de pesquisa acadêmica, catalogação BibTeX e citações ABNT.
   2. `academic_writing_style` – Diretrizes de tom impessoal, vocabulário e clareza científica.
-  3. `error_triage` – Diagnóstico rápido via `make check --json` e triagem de erros (template vs conteúdo).
+  3. `error_triage` – Diagnóstico rápido via `make check --json` + auditoria geométrica + `make preview` e triagem de erros (template vs conteúdo).
   4. `makefile_usage` – Padronização de compilação via Makefile e make.bat.
   5. `architecture_guardian` – Bloqueio de edições indevidas na Área Restrita do template.
   6. `autonomy_rules` – Travas de segurança para preservar a autoria intelectual do autor.
-  7. `tcc_bridge_workflow` – Pipeline de sincronização ponta a ponta com Google Docs e Drive via MCP.
-  8. `health_check` – Auditoria de ambiente e conectividade MCP antes de deploys.
-  9. `iteration_report` – Relatório executivo de fechamento de ciclos de revisão.
-  10. `change_review` – Revisão visual Antes vs. Depois (Carrossel, HTML via `make diff` e Mermaid) antes de alterações semânticas.
+  7. `mcp_gdocs_guide` – Guia completo das 20 ferramentas ortogonais do `mcp-gdocs-latex` (v2.0.0), setup em 3 passos e fluxos ABNT.
+  8. `tcc_bridge_workflow` – Pipeline v2.0.0 de sincronização ponta a ponta com Google Docs e Drive via MCP (quando conectado).
+  9. `health_check` – Auditoria de documentos compartilhados (`list_available_documents`) e paridade MD5/`%%EOF` (`check_pdf_sync`) antes de deploys no Drive.
+  10. `iteration_report` – Relatório executivo de fechamento de ciclos de revisão.
+  11. `change_review` – Revisão visual Antes vs. Depois (Carrossel, HTML via `make diff` e Mermaid) antes de alterações semânticas.
