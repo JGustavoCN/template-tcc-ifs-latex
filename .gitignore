@@ -11,7 +11,8 @@ src/main.pdf
 
 # PDFs de referência locais (livros/artigos protegidos por copyright não sobem ao Git)
 docs/pdfs/*.pdf
-
+!docs/pdfs/severino2017-metodologia-trabalho-cientifico-24ed.pdf
+!docs/pdfs/lakatos2003-fundamentos-metodologia-cientifica.pdf
 # Arquivos auxiliares comuns gerados na compilação LaTeX
 *.aux
 *.fdb_latexmk
