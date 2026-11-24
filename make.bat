@@ -201,7 +201,7 @@ echo   .\make.bat slides   - Compila os slides Beamer da banca em slides\build\a
 echo   .\make.bat portal   - Gera o portal web interativo em public\ (GitHub Pages).
 echo   .\make.bat diff     - Exibe word-diff por secao e gera relatorio visual (--html / --md).
 echo   .\make.bat add-ref  - Importa referencia ABNT via DOI para src\referencias.bib.
-echo   .\make.bat update   - Verifica e sincroniza melhorias do template (--dry-run / --sync-infra / --rollback).
+echo   .\make.bat update   - Atualiza o template com seguranca (--auto / --wizard / --dry-run / --rollback).
 echo   .\make.bat all      - Executa figures -^> build -^> clean (pipeline completo)
 echo   .\make.bat clean    - Remove arquivos temporarios (.aux, .log, .bbl, etc).
 echo   .\make.bat cleanall - Remove todos os arquivos gerados (incluindo .pdf).

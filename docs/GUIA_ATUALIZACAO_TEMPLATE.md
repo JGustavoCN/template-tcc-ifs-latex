@@ -16,11 +16,58 @@ Toda atualização obedece estritamente às 3 zonas declaradas em [`template-man
 
 ---
 
-## ⚡ Passo 0 (Bootstrap) — Para Projetos em Versões Antigas (< v2.5.0)
+## ⚡ Jeito Mais Rápido: 1 Comando (Humanos) ou 1 Prompt (IA)
 
-Se o seu projeto foi criado antes da **v2.5.0**, o arquivo `scripts/update_template.js` local ainda é a versão antiga (que só conhece `--merge` e não possui `--sync-infra`, `--dry-run`, `--skip-config` nem `--rollback`).
+Você **não precisa decorar vários comandos** — mesmo se o seu projeto for muito antigo e não tiver a pasta `scripts/`, nem `upstream` configurado, nem a skill da IA:
 
-**Antes de rodar o fluxo completo, baixe apenas o novo script `scripts/update_template.js`** (isso não toca em nenhum outro arquivo do seu TCC):
+### 🖥️ Opção 1 — 1 Comando Direto (Zero Perguntas) ou Assistente Guiado
+
+- **🔥 Modo 100% Direto (`--auto` / `-y` — faz automaticamente o caminho mais seguro recomendado):**
+  - Salva eventual alteração local pendente num commit de segurança, faz *self-update* do próprio script, cria tag de backup + **branch isolada**, sincroniza **somente a Zona 1** e já roda a validação completa (`Zona 3 + doctor + check`). Sempre reversível 100% com `--rollback`!
+  ```powershell
+  # Se já está na v2.5.0+:
+  .\make.bat update --auto       # Linux/macOS: make update ARGS="--auto"
+
+  # Se o projeto é antigo (< v2.5.0 ou sem scripts/) — Windows PowerShell:
+  $env:TCC_UPDATE_AUTO=1; irm https://raw.githubusercontent.com/JGustavoCN/template-tcc-ifs-latex/main/update.ps1 | iex
+  ```
+  ```bash
+  # Se o projeto é antigo (< v2.5.0) — Linux / macOS:
+  curl -fsSL https://raw.githubusercontent.com/JGustavoCN/template-tcc-ifs-latex/main/update.sh | bash -s -- --auto
+  ```
+- **🧭 Modo Assistente Interativo (`--wizard` — escolhe cada opção no menu `[1/2/3/0]`):**
+  ```powershell
+  # Se já está na v2.5.0+:
+  .\make.bat update --wizard     # Linux/macOS: make update ARGS="--wizard"
+
+  # Se o projeto é antigo (< v2.5.0 ou sem scripts/) — Windows PowerShell:
+  irm https://raw.githubusercontent.com/JGustavoCN/template-tcc-ifs-latex/main/update.ps1 | iex
+  ```
+  ```bash
+  # Se o projeto é antigo (< v2.5.0) — Linux / macOS:
+  curl -fsSL https://raw.githubusercontent.com/JGustavoCN/template-tcc-ifs-latex/main/update.sh | bash
+  ```
+
+> **🔄 Self-Update Automático (v2.3+):** a partir da v2.5.0, sempre que você rodar `--auto`, `--wizard` ou `--sync-infra`, o script verifica automaticamente se existe uma versão mais recente de si mesmo no repositório oficial e se auto-atualiza antes de rodar — eliminando a necessidade de repetir o Passo 0 no futuro!
+
+No assistente `--wizard`, você tem 4 escolhas claras:
+- **`[1]`** Atualizar em **branch isolada** + validação automática (`Zona 3 + doctor + check`);
+- **`[2]`** Atualizar em **branch isolada mantendo `src/config.tex`** intacto (ideal perto da banca);
+- **`[3]`** Trazer apenas o **kit mínimo para IA** (3 arquivos: script + skill + guia) sem alterar o TCC;
+- **`[0]`** Cancelar (limpando automaticamente qualquer arquivo temporário de bootstrap).
+
+### 🤖 Opção 2 — Prompt Pronto para IA (Copie e Cole)
+
+- **Se o seu projeto já tem a v2.5.0+ (ou você rodou a opção `[3]` acima):**
+  > *"Use a skill `template_updater` para verificar e atualizar a infraestrutura do template oficial em branch isolada, validar com `doctor`/`check` e me entregar o relatório confirmando que a Zona 3 ficou intocada."*
+- **Se o seu projeto é antigo (< v2.5.0 e ainda não tem a skill instalada):**
+  > *"Leia o guia oficial em `https://raw.githubusercontent.com/JGustavoCN/template-tcc-ifs-latex/main/docs/GUIA_ATUALIZACAO_TEMPLATE.md`, verifique `git status` primeiro (se houver pendências, me pergunte antes), baixe apenas `scripts/update_template.js`, rode `node scripts/update_template.js --dry-run --json` e aguarde minha aprovação. Depois aplique com `node scripts/update_template.js --sync-infra --branch --verify --json` e me entregue o relatório provando que nenhum arquivo autoral (Zona 3) foi alterado."*
+
+---
+
+## 🛠️ Passo 0 Manual (Alternativa Git explícita sem `irm | iex`)
+
+Se você prefere baixar manualmente apenas o novo `scripts/update_template.js` via Git antes de rodar `--wizard` ou `--dry-run`:
 
 ### Opção A — Via Git (Recomendado)
 ```bash

@@ -230,32 +230,69 @@ O template foi projetado com separação estrita entre o conteúdo autoral do al
 
 ---
 
-### Opção 1: Atualização Segura em 3 Zonas via Terminal (Recomendado — inclusive para "Use this template")
+### Opção 1: Atualização em 1 Comando — Direto (`--auto`) ou Guiado (`--wizard`)
 
-> 📖 **Guia visual completo (com fluxograma Mermaid e Passo 0 de bootstrap para versões antigas < v2.5.0):** consulte **[`docs/GUIA_ATUALIZACAO_TEMPLATE.md`](./docs/GUIA_ATUALIZACAO_TEMPLATE.md)**.
+> 📖 **Guia visual completo com fluxograma Mermaid:** consulte **[`docs/GUIA_ATUALIZACAO_TEMPLATE.md`](./docs/GUIA_ATUALIZACAO_TEMPLATE.md)**.
 
-Se você criou o projeto numa versão anterior (< v2.5.0), baixe primeiro apenas o novo atualizador (1 linha):
+- **Modo 100% Direto (zero perguntas — faz o mais recomendado: self-update + backup automático + branch isolada + Zona 1 + `doctor`/`check`):**
+  ```powershell
+  # Projeto já na v2.5.0+ (Windows / Linux / macOS):
+  .\make.bat update --auto         # Linux/Mac: make update ARGS="--auto"
+
+  # Projeto muito antigo (< v2.5.0, mesmo sem scripts/ ou upstream) — Windows PowerShell:
+  $env:TCC_UPDATE_AUTO=1; irm https://raw.githubusercontent.com/JGustavoCN/template-tcc-ifs-latex/main/update.ps1 | iex
+  ```
+  ```bash
+  # Projeto muito antigo (< v2.5.0) — Linux / macOS:
+  curl -fsSL https://raw.githubusercontent.com/JGustavoCN/template-tcc-ifs-latex/main/update.sh | bash -s -- --auto
+  ```
+  *(Não gostou ou quer desfazer 100%? Sempre basta rodar `.\make.bat update --rollback` ou `node scripts/update_template.js --rollback`!)*
+
+- **Modo Interativo Guiado (com menu `[1/2/3/0]`, incluindo opção de manter `src/config.tex` ou apenas baixar o kit para IA):**
+  ```powershell
+  # Projeto já na v2.5.0+:
+  .\make.bat update --wizard       # Linux/Mac: make update ARGS="--wizard"
+
+  # Projeto muito antigo (< v2.5.0) — Windows PowerShell:
+  irm https://raw.githubusercontent.com/JGustavoCN/template-tcc-ifs-latex/main/update.ps1 | iex
+  ```
+  ```bash
+  # Projeto muito antigo (< v2.5.0) — Linux / macOS:
+  curl -fsSL https://raw.githubusercontent.com/JGustavoCN/template-tcc-ifs-latex/main/update.sh | bash
+  ```
+  *Da v2.5.0 em diante, o próprio `update_template.js` possui **self-update automático**: se houver uma versão mais nova dele no repositório oficial, ele se atualiza e reinicia sozinho antes de executar.*
+
+---
+
+### Opção 2: Atualizar com IA (Copie e Cole)
+
+- **Projetos já na v2.5.0+:** basta dizer à IA:
+  > *"Use a skill `template_updater` para verificar e atualizar a infraestrutura do template oficial em branch isolada e me entregar o relatório de validação."*
+- **Projetos antigos (< v2.5.0, sem a skill ainda):** cole este prompt curto:
+  > *"Leia `https://raw.githubusercontent.com/JGustavoCN/template-tcc-ifs-latex/main/docs/GUIA_ATUALIZACAO_TEMPLATE.md`, verifique `git status` (pare se houver alterações pendentes), baixe apenas `scripts/update_template.js`, simule com `node scripts/update_template.js --dry-run --json` e aguarde minha aprovação antes de rodar `node scripts/update_template.js --sync-infra --branch --verify --json` e me mostrar o relatório confirmando que a Zona 3 ficou intocada."*
+
+---
+
+### Opção 3: Comandos Granulares via Terminal (Controle Manual)
+
 ```bash
+# 1. (Apenas 1ª vez em projetos < v2.5.0) Baixe somente o novo atualizador via Git:
 git fetch upstream main && git checkout upstream/main -- scripts/update_template.js
-```
 
-Em seguida, simule sem alterar nada (`--dry-run`) e aplique com backup automático (`--sync-infra`):
-
-```bash
-# 1. Simular o que muda (sem alterar nenhum arquivo):
+# 2. Simule sem alterar nenhum arquivo:
 .\make.bat update --dry-run
 
-# 2. Aplicar apenas a infraestrutura (cria tag backup/pre-update-* automática):
-.\make.bat update --sync-infra
-# Dica: use --skip-config se estiver perto da banca e não quiser alterar src/config.tex
+# 3. Aplique em branch isolada + tag de backup + validação automática (doctor/check):
+.\make.bat update --sync-infra --branch --verify
+# Dica: adicione --skip-config se estiver perto da banca e não quiser alterar src/config.tex
 
-# 3. Precisa desfazer? Rollback em 1 comando:
+# 4. Precisa desfazer? Rollback em 1 comando:
 .\make.bat update --rollback
 ```
 
 ---
 
-### Opção 2: Atualização Manual via Git (Linha de Comando)
+### Opção 4: Atualização Manual via Git (Linha de Comando)
 
 Você também pode utilizar os comandos padrão do Git:
 
@@ -284,7 +321,7 @@ Você também pode utilizar os comandos padrão do Git:
 
 ---
 
-### Opção 3: Atualização para quem baixou em .ZIP (Overleaf ou Sem Git)
+### Opção 5: Atualização para quem baixou em .ZIP (Overleaf ou Sem Git)
 
 1. Faça uma cópia de segurança (backup) da sua pasta atual de trabalho.
 2. Baixe o `.zip` mais recente do repositório oficial no GitHub.

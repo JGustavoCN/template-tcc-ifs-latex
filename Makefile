@@ -107,7 +107,7 @@ help:
 	@echo "  make portal   - Gera o portal web interativo dinâmico em public/ (para GitHub Pages)."
 	@echo "  make diff     - Exibe word-diff por seção e gera relatório visual (--html / --md)."
 	@echo "  make add-ref  - Importa referência ABNT via DOI para src/referencias.bib (DOI=...)."
-	@echo "  make update   - Verifica e sincroniza melhorias do template oficial (--dry-run / --sync-infra / --rollback)."
+	@echo "  make update   - Atualiza o template com segurança (--auto / --wizard / --dry-run / --rollback)."
 	@echo "  make all      - Executa figures -> build -> clean (pipeline completo)."
 	@echo "  make clean    - Remove arquivos temporários e auxiliares (.aux, .log, etc)."
 	@echo "  make cleanall - Remove todos os arquivos gerados (incluindo o .pdf final)."

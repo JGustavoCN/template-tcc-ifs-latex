@@ -40,16 +40,18 @@ Antes de qualquer coisa, verifique se `scripts/update_template.js` local já sup
 5. **Pergunte ao usuário antes de aplicar:**
    - Deseja aplicar a atualização completa (`--sync-infra`) ou preservar `src/config.tex` (`--sync-infra --skip-config`, recomendado se o TCC estiver às vésperas da banca)?
 
-### Passo 2 — Execução Segura com Branch Isolada e Tag de Backup Automática
+### Passo 2 — Execução Segura com Branch Isolada, Tag de Backup e Validação Integrada
 Somente após aprovação explícita do usuário:
-1. Confirme que o working tree está limpo (ou apenas com `scripts/update_template.js` modificado pelo Passo 0).
-2. Recomende aplicar em **branch isolada (`--branch`)** para testar sem tocar na branch principal:
+1. Confirme que o working tree está limpo (ou apenas com arquivos legítimos de bootstrap: `scripts/update_template.js`, `.agents/skills/template_updater/SKILL.md`, `docs/GUIA_ATUALIZACAO_TEMPLATE.md`).
+2. Recomende aplicar em **branch isolada (`--branch`)** já com verificação pós-update (`--verify`) — ou `--auto --json` se o usuário autorizou o fluxo completo direto (incluindo self-update e backup automático):
    ```bash
-   node scripts/update_template.js --sync-infra --branch
+   node scripts/update_template.js --sync-infra --branch --verify --json
    # ou, se o usuário pediu para manter config.tex intacto:
-   node scripts/update_template.js --sync-infra --branch --skip-config
+   node scripts/update_template.js --sync-infra --branch --skip-config --verify --json
+   # ou modo direto 1 comando (após aprovação explícita do usuário):
+   node scripts/update_template.js --auto --json
    ```
-3. Registre e informe ao usuário a tag de backup (`backup/pre-update-YYYYMMDD-HHMMSS`) e a branch criada, lembrando que `node scripts/update_template.js --rollback` reverte 100% (restaura modificados, remove apenas os novos arquivos do update e retorna à branch original).
+3. Registre e informe ao usuário a tag de backup (`backup/pre-update-YYYYMMDD-HHMMSS`), a branch criada, a prova de integridade da Zona 3 (`sacredIntact: true`) e o resultado de `doctor` e `check`, lembrando que `node scripts/update_template.js --rollback` reverte 100% (restaura modificados, remove apenas os arquivos novos do update/bootstrap e retorna à branch original).
 
 ### Passo 3 — Migração Assistida da Zona 2 (Somente se o usuário quiser)
 - Nunca edite `src/main.tex`, `src/metadados.tex`, `AGENTS.md` ou `README.md` sem aprovação explícita.
