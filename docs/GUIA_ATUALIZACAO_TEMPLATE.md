@@ -59,9 +59,17 @@ No assistente `--wizard`, você tem 4 escolhas claras:
 ### 🤖 Opção 2 — Prompt Pronto para IA (Copie e Cole)
 
 - **Se o seu projeto já tem a v2.5.0+ (ou você rodou a opção `[3]` acima):**
-  > *"Use a skill `template_updater` para verificar e atualizar a infraestrutura do template oficial em branch isolada, validar com `doctor`/`check` e me entregar o relatório confirmando que a Zona 3 ficou intocada."*
+  ```text
+  Use a skill template_updater para verificar e atualizar a infraestrutura do template oficial em branch isolada e me entregar um relatório detalhado com as branches (original intacta vs. nova), tag de backup, avaliação de riscos, prova de que a Zona 3 ficou intacta e resultado de doctor/check.
+  ```
 - **Se o seu projeto é antigo (< v2.5.0 e ainda não tem a skill instalada):**
-  > *"Leia o guia oficial em `https://raw.githubusercontent.com/JGustavoCN/template-tcc-ifs-latex/main/docs/GUIA_ATUALIZACAO_TEMPLATE.md`, verifique `git status` primeiro (se houver pendências, me pergunte antes), baixe apenas `scripts/update_template.js`, rode `node scripts/update_template.js --dry-run --json` e aguarde minha aprovação. Depois aplique com `node scripts/update_template.js --sync-infra --branch --verify --json` e me entregue o relatório provando que nenhum arquivo autoral (Zona 3) foi alterado."*
+  ```text
+  Leia o guia oficial em https://raw.githubusercontent.com/JGustavoCN/template-tcc-ifs-latex/main/docs/GUIA_ATUALIZACAO_TEMPLATE.md e conduza a atualização segura deste projeto antigo:
+  1. Verifique git status primeiro (se houver alterações locais pendentes, pare e me pergunte antes de commitar).
+  2. Baixe apenas scripts/update_template.js do repositório oficial e rode node scripts/update_template.js --dry-run --json, me mostrando as 3 Zonas e os eventuais riscos antes de aplicar.
+  3. Após minha aprovação, aplique em branch isolada com node scripts/update_template.js --sync-infra --branch --verify --json.
+  4. Me entregue um relatório detalhado contendo: branch original (confirmando que permaneceu 100% intacta), branch isolada criada, tag de backup, confirmação via git status/diff de que nenhum arquivo da Zona 3 foi alterado, resultado completo de doctor e check, avaliação de impacto de src/config.tex na paginação e a recomendação clara entre manter (commit/merge), usar --skip-config ou desfazer com --rollback.
+  ```
 
 ---
 

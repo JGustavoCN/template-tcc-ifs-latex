@@ -61,7 +61,11 @@ Somente após aprovação explícita do usuário:
 1. Rode `.\make.bat doctor` (ou `make doctor`) para confirmar todas as dependências.
 2. Rode `.\make.bat check --json` (ou `make check --json`) para recompilar o PDF e auditar build, flutuadores e geometria (principalmente se `src/config.tex` foi atualizado com `\brokenpenalty=10000` e barreira de `\subsection`).
 3. Se o `check` apontar alertas em páginas específicas, rode `.\make.bat preview --issues` e inspecione visualmente.
-4. Somente após validação limpa, sugira o `git commit` final ao usuário (ou execute `--rollback` se o usuário preferir reverter).
+4. Entregue sempre um **Relatório Final de Validação** contendo:
+   - **Branches e Backup:** branch original (confirmando via `git log -1` que permaneceu 100% intacta), nome da branch isolada criada e tag `backup/pre-update-*`;
+   - **Prova da Zona 3:** confirmação via `git status`/`git diff --name-only` de que nenhum arquivo autoral foi alterado;
+   - **Saúde e Riscos:** resultado de `doctor` e `check` (páginas, erros, avisos, Overfull, Float Drift, geometria) + avaliação de impacto de `src/config.tex`;
+   - **Próximo passo recomendado:** commitar/mesclar a branch, reaplicar com `--skip-config` ou desfazer 100% com `node scripts/update_template.js --rollback`.
 
 ---
 
