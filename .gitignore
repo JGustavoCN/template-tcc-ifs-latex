@@ -9,6 +9,9 @@ public/
 main.pdf
 src/main.pdf
 
+# PDFs de referência locais (livros/artigos protegidos por copyright não sobem ao Git)
+docs/pdfs/*.pdf
+
 # Arquivos auxiliares comuns gerados na compilação LaTeX
 *.aux
 *.fdb_latexmk

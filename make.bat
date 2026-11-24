@@ -13,6 +13,7 @@ if "%1"=="build" goto build
 if "%1"=="figures" goto figures
 if "%1"=="check" goto check
 if "%1"=="verify" goto check
+if "%1"=="doctor" goto doctor
 if "%1"=="preview" goto preview
 if "%1"=="slides" goto slides
 if "%1"=="portal" goto portal
@@ -102,6 +103,16 @@ if %ERRORLEVEL% NEQ 0 (
 node scripts\check.js %2 %3 %4 %5 %6
 goto :eof
 
+:doctor
+where node >nul 2>nul
+if %ERRORLEVEL% NEQ 0 (
+    echo [AVISO] Node.js nao foi encontrado no sistema.
+    echo Para executar o diagnostico completo de dependencias, instale o Node.js: https://nodejs.org/
+    exit /b 1
+)
+node scripts\doctor.js %2 %3 %4 %5 %6
+goto :eof
+
 :preview
 where node >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
@@ -160,7 +171,7 @@ if %ERRORLEVEL% NEQ 0 (
     echo Para atualizar o template automaticamente, instale o Node.js: https://nodejs.org/
     exit /b 1
 )
-node scripts\update_template.js %2 %3 %4
+node scripts\update_template.js %2 %3 %4 %5 %6
 goto :eof
 
 :clean
@@ -184,12 +195,13 @@ echo ========================================================
 echo   .\make.bat build    - Compila o LaTeX gerando o PDF final de forma enxuta.
 echo   .\make.bat figures  - Compila os diagramas .mmd em PDF em src\figuras\
 echo   .\make.bat check    - Executa o diagnostico de build, layout, geometria do PDF e ABNT.
+echo   .\make.bat doctor   - Verifica todas as dependencias (LaTeX, Biber, Perl, Node, Poppler, Beamer).
 echo   .\make.bat preview  - Renderiza paginas do PDF em PNG (ex: .\make.bat preview 14 ou --issues).
 echo   .\make.bat slides   - Compila os slides Beamer da banca em slides\build\apresentacao.pdf.
 echo   .\make.bat portal   - Gera o portal web interativo em public\ (GitHub Pages).
 echo   .\make.bat diff     - Exibe word-diff por secao e gera relatorio visual (--html / --md).
 echo   .\make.bat add-ref  - Importa referencia ABNT via DOI para src\referencias.bib.
-echo   .\make.bat update   - Verifica e sincroniza melhorias do template oficial.
+echo   .\make.bat update   - Verifica e sincroniza melhorias do template (--dry-run / --sync-infra / --rollback).
 echo   .\make.bat all      - Executa figures -^> build -^> clean (pipeline completo)
 echo   .\make.bat clean    - Remove arquivos temporarios (.aux, .log, .bbl, etc).
 echo   .\make.bat cleanall - Remove todos os arquivos gerados (incluindo .pdf).

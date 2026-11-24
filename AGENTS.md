@@ -66,6 +66,8 @@ Sempre utilize o Makefile (ou `make.bat` no Windows). **Nunca execute comandos m
 | `.\make.bat figures` | `make figures` | Converte diagramas `.mmd` em `src/figuras/` para PDF vetorial recortado. |
 | `.\make.bat check` | `make check` | Auditoria inteligente: erros, `Underfull \vbox`, `Overfull \hbox`, geometria real do PDF (Poppler/PyMuPDF, `--ink` para tinta) e linter ABNT. |
 | `.\make.bat check --json` | `make check --json` | Retorna o status de auditoria em JSON compacto (ideal para consumo por IAs). |
+| `.\make.bat doctor` | `make doctor` | Verifica todas as dependências (LaTeX, Biber, Perl, Node, Git, Poppler, Ghostscript, Beamer, PyMuPDF) e capacidades prontas (`--json`). |
+| `.\make.bat update --dry-run` | `make update ARGS="--dry-run"` | Verifica nova versão do template oficial e simula atualização segura em 3 Zonas (`--sync-infra`, `--skip-config`, `--rollback`). |
 | `.\make.bat preview <pag>` | `make preview PAGES=<pag>` | Renderiza páginas do PDF em PNG (`src/build/previews/`) — suporta intervalos (`14-16`), `--issues` e `--slides`. |
 | `.\make.bat slides` | `make slides` | Compila os slides Beamer 16:9 da defesa (`slides/apresentacao.tex`) reutilizando `src/referencias.bib` e `src/figuras/`. |
 | `.\make.bat portal` | `make portal` | Gera o portal web dinâmico com PDF embutido e sumário para o GitHub Pages. |
@@ -121,3 +123,4 @@ Sempre que surgirem dúvidas arquiteturais ou necessidade de expansão da infrae
   9. `health_check` – Auditoria de documentos compartilhados (`list_available_documents`) e paridade MD5/`%%EOF` (`check_pdf_sync`) antes de deploys no Drive.
   10. `iteration_report` – Relatório executivo de fechamento de ciclos de revisão.
   11. `change_review` – Revisão visual Antes vs. Depois (Carrossel, HTML via `make diff` e Mermaid) antes de alterações semânticas.
+  12. `template_updater` – Atualização segura em 3 Zonas (`--dry-run` / `--sync-infra` / `--skip-config` / `--rollback`) + Passo 0 de bootstrap para versões antigas (`docs/GUIA_ATUALIZACAO_TEMPLATE.md`).

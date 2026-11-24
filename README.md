@@ -144,12 +144,13 @@ Incluímos suporte completo multiplataforma via `Makefile` (Linux/macOS/Git Bash
 | `.\make.bat build` | `make build` | **Compilação padrão:** Converte o LaTeX em PDF de forma enxuta resolvendo referências BibLaTeX/ABNT. Não requer Node.js. |
 | `.\make.bat figures` | `make figures` | **Compila diagramas:** Varre `src/figuras/*.mmd` e compila para PDF vetorial recortado (`pdfcrop`). *(Requer Node.js)* |
 | `.\make.bat check` | `make check` | **Diagnóstico inteligente & ABNT:** Analisa compilação, `Underfull \vbox`, `Overfull \hbox`, **geometria real do PDF** (margens e parágrafos partidos via Poppler/MiKTeX ou PyMuPDF), citações órfãs e redação ABNT. *(Requer Node.js)* |
+| `.\make.bat doctor` | `make doctor` | **Diagnóstico de Ambiente:** Verifica todas as dependências (LaTeX, Biber, Perl, Node, Git, Poppler, Ghostscript, Beamer) e indica exatamente quais recursos estão prontos (`--json`). *(Requer Node.js)* |
 | `.\make.bat preview 14` | `make preview PAGES=14` | **Prévia Visual em PNG:** Renderiza páginas específicas (ex: `14-16`) ou todas as páginas com alertas (`--issues`) em `src/build/previews/` via `pdftoppm`/Ghostscript/PyMuPDF. *(Requer Node.js)* |
 | `.\make.bat slides` | `make slides` | **Slides da Banca (Beamer 16:9):** Compila `slides/apresentacao.tex` no tema institucional do IFS reutilizando o mesmo `src/referencias.bib` e `src/figuras/`. |
 | `.\make.bat portal` | `make portal` | **Portal Web Acadêmico:** Extrai dados 100% reais do LaTeX/PDF e gera a vitrine web com sumário dinâmico em `public/index.html` para o GitHub Pages. *(Requer Node.js)* |
 | `.\make.bat diff` | `make diff` | **Revisão Visual de Mudanças:** Mostra word-diff por `\section`, alertas de citações/números e gera comparador HTML Antes/Depois (`--html`). *(Requer Node.js + Git)* |
 | `.\make.bat add-ref <DOI>` | `make add-ref DOI=<DOI>` | **Importador via DOI:** Consulta CrossRef/DataCite e cadastra a referência formatada (ABNT) em `src/referencias.bib`. *(Requer Node.js)* |
-| `.\make.bat update` | `make update` | **Sincronização do Template:** Conecta ao repositório oficial e atualiza automações e regras ABNT preservando seu texto. *(Requer Node.js)* |
+| `.\make.bat update` | `make update` | **Atualização Segura em 3 Zonas:** Verifica versão, simula (`--dry-run`), cria backup automático e atualiza só a infra (`--sync-infra` / `--skip-config` / `--rollback`), preservando seus capítulos e pastas autorais. *(Requer Node.js + Git)* |
 | `.\make.bat all` | `make all` | **Pipeline completo:** Executa `figures` → `build` → `clean` em sequência. |
 | `.\make.bat clean` | `make clean` | **Limpeza leve:** Remove arquivos intermediários (`.aux`, `.log`, `.bbl`, etc.), mantendo o PDF final. |
 | `.\make.bat cleanall` | `make cleanall` | **Limpeza total:** Remove todos os artefatos gerados, incluindo o PDF final. |
@@ -229,26 +230,27 @@ O template foi projetado com separação estrita entre o conteúdo autoral do al
 
 ---
 
-### Opção 1: Atualização Automática via Terminal (Recomendado)
+### Opção 1: Atualização Segura em 3 Zonas via Terminal (Recomendado — inclusive para "Use this template")
 
-Se você utiliza Git, basta executar nosso assistente na raiz do projeto:
+> 📖 **Guia visual completo (com fluxograma Mermaid e Passo 0 de bootstrap para versões antigas < v2.5.0):** consulte **[`docs/GUIA_ATUALIZACAO_TEMPLATE.md`](./docs/GUIA_ATUALIZACAO_TEMPLATE.md)**.
 
+Se você criou o projeto numa versão anterior (< v2.5.0), baixe primeiro apenas o novo atualizador (1 linha):
 ```bash
-# No Windows:
-.\make.bat update
-
-# No Linux / macOS:
-make update
+git fetch upstream main && git checkout upstream/main -- scripts/update_template.js
 ```
 
-O assistente conectará ao repositório oficial e listará as melhorias disponíveis. Para aplicar a atualização imediatamente:
+Em seguida, simule sem alterar nada (`--dry-run`) e aplique com backup automático (`--sync-infra`):
 
 ```bash
-# No Windows:
-.\make.bat update --merge
+# 1. Simular o que muda (sem alterar nenhum arquivo):
+.\make.bat update --dry-run
 
-# No Linux / macOS:
-make update ARGS="--merge"
+# 2. Aplicar apenas a infraestrutura (cria tag backup/pre-update-* automática):
+.\make.bat update --sync-infra
+# Dica: use --skip-config se estiver perto da banca e não quiser alterar src/config.tex
+
+# 3. Precisa desfazer? Rollback em 1 comando:
+.\make.bat update --rollback
 ```
 
 ---

@@ -1,0 +1,96 @@
+{
+  "name": "template-tcc-ifs-latex",
+  "version": "2.5.0",
+  "updatedAt": "2026-11-24",
+  "officialRepo": "https://github.com/JGustavoCN/template-tcc-ifs-latex.git",
+  "defaultBranch": "main",
+  "zones": {
+    "infra": {
+      "description": "Zona 1 (Infraestrutura Pura) — Atualizada com segurança via --sync-infra sem tocar no texto autoral.",
+      "paths": [
+        "template-manifest.json",
+        "Makefile",
+        "make.bat",
+        ".gitattributes",
+        "setup-windows.ps1",
+        "CHECKLIST_DEFESA.md",
+        ".github/workflows/build-latex.yml",
+        "scripts/check.js",
+        "scripts/build_portal.js",
+        "scripts/diff_report.js",
+        "scripts/add_doi.js",
+        "scripts/preview_page.js",
+        "scripts/doctor.js",
+        "scripts/update_template.js",
+        "scripts/lib/layout_inspector.js",
+        "scripts/lib/word_counter.js",
+        "scripts/lib/pdf_geometry.js",
+        "web/template.html",
+        "slides/tema-ifs.sty",
+        "src/config.tex",
+        "docs/GUIA_ATUALIZACAO_TEMPLATE.md",
+        ".agents/rules/mcp_gdocs.md",
+        ".agents/skills/academic_writing_style/SKILL.md",
+        ".agents/skills/architecture_guardian/SKILL.md",
+        ".agents/skills/autonomy_rules/SKILL.md",
+        ".agents/skills/bibliographic_research/SKILL.md",
+        ".agents/skills/change_review/SKILL.md",
+        ".agents/skills/error_triage/SKILL.md",
+        ".agents/skills/health_check/SKILL.md",
+        ".agents/skills/iteration_report/SKILL.md",
+        ".agents/skills/makefile_usage/SKILL.md",
+        ".agents/skills/mcp_gdocs_guide/SKILL.md",
+        ".agents/skills/tcc_bridge_workflow/SKILL.md",
+        ".agents/skills/template_updater/SKILL.md"
+      ],
+      "configPaths": [
+        "src/config.tex"
+      ]
+    },
+    "createIfMissing": {
+      "description": "Arquivos novos úteis que só são criados se ainda não existirem no projeto do aluno.",
+      "paths": [
+        "slides/apresentacao.tex",
+        "docs/pdfs/README.md",
+        "src/figuras/diagramas/.gitkeep",
+        "src/figuras/graficos/.gitkeep",
+        "src/figuras/capturas/.gitkeep"
+      ]
+    },
+    "gitignoreAppend": {
+      "description": "Regras acrescentadas de forma idempotente ao .gitignore sem apagar regras locais do aluno (ex.: cache/).",
+      "entries": [
+        "slides/build/",
+        "docs/pdfs/*.pdf"
+      ]
+    },
+    "assisted": {
+      "description": "Zona 2 (Híbrida / Assistida) — Nunca sobrescrita automaticamente; apenas auditada para migração guiada.",
+      "paths": [
+        "src/main.tex",
+        "src/metadados.tex",
+        ".gitignore",
+        "AGENTS.md",
+        "GEMINI.md",
+        "README.md",
+        "src/README.md"
+      ]
+    },
+    "sacred": {
+      "description": "Zona 3 (Sagrada / Autoral do Aluno) — Proibição absoluta de sobrescrita ou remoção.",
+      "patterns": [
+        "src/capitulos/**",
+        "src/pre-textuais.tex",
+        "src/referencias.bib",
+        "src/apendices/**",
+        "src/anexos/**",
+        "src/figuras/**",
+        "docs/pdfs/**",
+        "docs/guias/**",
+        "resources/**",
+        "cache/**",
+        "example/**"
+      ]
+    }
+  }
+}

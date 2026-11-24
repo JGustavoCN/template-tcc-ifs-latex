@@ -31,7 +31,7 @@ CLEAN_CMD = latexmk -c -outdir=$(BUILD_DIR) -cd $(SRC_DIR)/$(MAIN_FILE)
 CLEAN_ALL_CMD = latexmk -C -outdir=$(BUILD_DIR) -cd $(SRC_DIR)/$(MAIN_FILE)
 
 # Targets principais
-.PHONY: all build figures check verify preview slides portal diff add-ref update clean cleanall help check-node
+.PHONY: all build figures check verify doctor preview slides portal diff add-ref update clean cleanall help check-node
 
 all: figures build clean
 
@@ -60,6 +60,9 @@ check:
 	@node scripts/check.js $(ARGS)
 
 verify: check
+
+doctor:
+	@node scripts/doctor.js $(ARGS)
 
 preview:
 	@node scripts/preview_page.js $(PAGES) $(ARGS)
@@ -98,12 +101,13 @@ help:
 	@echo "  make build    - Compila o projeto LaTeX gerando o PDF final de forma enxuta."
 	@echo "  make figures  - Compila os diagramas Mermaid (.mmd) em PDF na pasta src/figuras/."
 	@echo "  make check    - Executa o diagnóstico de build, layout, geometria do PDF e ABNT."
+	@echo "  make doctor   - Verifica todas as dependências (LaTeX, Biber, Perl, Node, Poppler, Beamer)."
 	@echo "  make preview  - Renderiza páginas do PDF em PNG (ex: make preview PAGES=14-16 ou ARGS=--issues)."
 	@echo "  make slides   - Compila os slides Beamer da banca em slides/build/apresentacao.pdf."
 	@echo "  make portal   - Gera o portal web interativo dinâmico em public/ (para GitHub Pages)."
 	@echo "  make diff     - Exibe word-diff por seção e gera relatório visual (--html / --md)."
 	@echo "  make add-ref  - Importa referência ABNT via DOI para src/referencias.bib (DOI=...)."
-	@echo "  make update   - Verifica e sincroniza melhorias do repositório oficial do template."
+	@echo "  make update   - Verifica e sincroniza melhorias do template oficial (--dry-run / --sync-infra / --rollback)."
 	@echo "  make all      - Executa figures -> build -> clean (pipeline completo)."
 	@echo "  make clean    - Remove arquivos temporários e auxiliares (.aux, .log, etc)."
 	@echo "  make cleanall - Remove todos os arquivos gerados (incluindo o .pdf final)."
