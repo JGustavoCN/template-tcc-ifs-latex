@@ -40,7 +40,7 @@ Antes de qualquer coisa, verifique se `scripts/update_template.js` local já sup
 5. **Pergunte ao usuário antes de aplicar:**
    - Deseja aplicar a atualização completa (`--sync-infra`) ou preservar `src/config.tex` (`--sync-infra --skip-config`, recomendado se o TCC estiver às vésperas da banca)?
 
-### Passo 2 — Execução Segura com Branch Isolada, Tag de Backup e Validação Integrada
+### Passo 2 — Execução Segura com Branch Isolada, Tag de Backup e Comparativo Real
 Somente após aprovação explícita do usuário:
 1. Confirme que o working tree está limpo (ou apenas com arquivos legítimos de bootstrap: `scripts/update_template.js`, `.agents/skills/template_updater/SKILL.md`, `docs/GUIA_ATUALIZACAO_TEMPLATE.md`).
 2. Recomende aplicar em **branch isolada (`--branch`)** já com verificação pós-update (`--verify`) — ou `--auto --json` se o usuário autorizou o fluxo completo direto (incluindo self-update e backup automático):
@@ -51,21 +51,23 @@ Somente após aprovação explícita do usuário:
    # ou modo direto 1 comando (após aprovação explícita do usuário):
    node scripts/update_template.js --auto --json
    ```
-3. Registre e informe ao usuário a tag de backup (`backup/pre-update-YYYYMMDD-HHMMSS`), a branch criada, a prova de integridade da Zona 3 (`sacredIntact: true`) e o resultado de `doctor` e `check`, lembrando que `node scripts/update_template.js --rollback` reverte 100% (restaura modificados, remove apenas os arquivos novos do update/bootstrap e retorna à branch original).
+   *(Observação: quando `src/config.tex` está na lista de atualização, `--verify` e `--auto` garantem automaticamente a existência de `.aux`/`.log` pré-update — compilando o estado antigo antes se necessário — e já retornam o bloco `verification.configImpactComparison` comparando paginação e flutuadores Antes vs. Depois.)*
 
 ### Passo 3 — Migração Assistida da Zona 2 (Somente se o usuário quiser)
 - Nunca edite `src/main.tex`, `src/metadados.tex`, `AGENTS.md` ou `README.md` sem aprovação explícita.
 - Se o usuário quiser ativar novos recursos opcionais (ex.: `\imprimirfolhadeaprovacao`, `\listofquadros*`, `\inserirfichacatalografica`, variáveis de banca em `src/metadados.tex`), mostre exatamente o bloco a adicionar (usando `.agents/skills/change_review/SKILL.md`) antes de editar.
 
-### Passo 4 — Validação Obrigatória Pós-Atualização
-1. Rode `.\make.bat doctor` (ou `make doctor`) para confirmar todas as dependências.
-2. Rode `.\make.bat check --json` (ou `make check --json`) para recompilar o PDF e auditar build, flutuadores e geometria (principalmente se `src/config.tex` foi atualizado com `\brokenpenalty=10000` e barreira de `\subsection`).
-3. Se o `check` apontar alertas em páginas específicas, rode `.\make.bat preview --issues` e inspecione visualmente.
-4. Entregue sempre um **Relatório Final de Validação** contendo:
-   - **Branches e Backup:** branch original (confirmando via `git log -1` que permaneceu 100% intacta), nome da branch isolada criada e tag `backup/pre-update-*`;
-   - **Prova da Zona 3:** confirmação via `git status`/`git diff --name-only` de que nenhum arquivo autoral foi alterado;
-   - **Saúde e Riscos:** resultado de `doctor` e `check` (páginas, erros, avisos, Overfull, Float Drift, geometria) + avaliação de impacto de `src/config.tex`;
-   - **Próximo passo recomendado:** commitar/mesclar a branch, reaplicar com `--skip-config` ou desfazer 100% com `node scripts/update_template.js --rollback`.
+### Passo 4 — Checklist Obrigatório de Certeza Pós-Atualização e Relatório Final
+Antes de declarar sucesso, confirme todos estes itens no JSON retornado ou via comandos locais:
+1. **Geração real dos artefatos de compilação:** verifique que `src/build/main.pdf`, `src/build/main.aux` e `src/build/main.log` foram gerados após a atualização (`buildDiagnostics.hasBuildFiles: true`, `buildConverged: true`, `layoutAudit.hasAux: true`). Se o PDF ainda estiver desatualizado ou sem `.aux`, execute `.\make.bat build` (ou `make build`) e `.\make.bat check --json` novamente.
+2. **Prova de integridade da Zona 3 e Zona 2:** verifique `sacredIntact: true` e confirme via `git diff --name-status backup/pre-update-*` que nenhum arquivo em `src/capitulos/`, `src/figuras/`, `src/referencias.bib`, `src/main.tex`, `src/metadados.tex`, `src/pre-textuais.tex`, `docs/guias/`, `docs/pdfs/`, `resources/` ou `cache/` foi alterado.
+3. **Resíduos e órfãos:** verifique se há `saveErrorFiles` (`*-SAVE-ERROR`) — limpe com `.\make.bat clean` — e alerte (sem apagar sozinho) se existirem scripts/PDFs legados órfãos em `scripts/` (ex.: `scripts/verify_abnt.js`, `scripts/main.pdf`).
+4. **Comparativo de `src/config.tex` (`configImpactComparison`):** compare páginas (`before.pages` vs. `after.pages`), deslocamento dos flutuadores (`floatsShifted`), `Underfull \vbox`, `Overfull \hbox`, `floatDrifts` e `hyphenatedPageBreaks`. Se houver alerta visual, rode `.\make.bat preview --issues`.
+5. **Entregue o Relatório Final de Validação** contendo:
+   - **Branches e Backup (sem apagar nenhuma branch sem pedido explícito):** estado da branch original, nome da branch isolada criada, tag `backup/pre-update-*` e **qual branch o usuário deve manter ativa para continuar escrevendo o TCC** após aprovar/integrar;
+   - **Prova da Zona 3** (`git status`/`git diff`);
+   - **Saúde e Comparativo (`doctor` + `check` + `configImpactComparison`)** confirmando `.aux`/`.log` gerados e zero regressões;
+   - **Decisão recomendada:** commitar e integrar na branch de trabalho, reaplicar com `--skip-config` ou desfazer 100% com `node scripts/update_template.js --rollback`.
 
 ---
 

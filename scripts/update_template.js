@@ -413,6 +413,12 @@ function runAutoUpdate(repoDir, scriptRepoDir, opts) {
     process.exit(0);
   }
 
+  // Captura baseline pré-update (buildando antes se .aux/.log estiverem ausentes/desatualizados) quando src/config.tex será alterado
+  const configWillChange = plan.toUpdate.includes('src/config.tex');
+  const preBaseline = configWillChange
+    ? capturePreUpdateBaseline(repoDir, { allowBuild: true, quiet: opts.json })
+    : null;
+
   const applied = executeSyncInfra(repoDir, plan, src.readSourceFile, {
     currentBranch,
     currentHead,
@@ -428,7 +434,8 @@ function runAutoUpdate(repoDir, scriptRepoDir, opts) {
 
   result.verification = runPostUpdateVerification(repoDir, {
     quiet: opts.json,
-    allowedCreateIfMissing: src.upstreamManifest.zones?.createIfMissing?.paths || []
+    allowedCreateIfMissing: src.upstreamManifest.zones?.createIfMissing?.paths || [],
+    preBaseline
   });
 
   if (opts.json) {
@@ -822,17 +829,298 @@ function executePrepareAi(repoDir, existsInSource, readSourceFile) {
   return written;
 }
 
+function resolveBuildArtifact(repoDir, filename) {
+  const inBuild = path.join(repoDir, 'src', 'build', filename);
+  if (fs.existsSync(inBuild)) return inBuild;
+  const inSrc = path.join(repoDir, 'src', filename);
+  if (fs.existsSync(inSrc)) return inSrc;
+  return null;
+}
+
+function listInputTexAndBibFiles(repoDir) {
+  const results = [];
+  const srcDir = path.join(repoDir, 'src');
+  const buildDir = path.join(srcDir, 'build');
+  const exts = new Set(['.tex', '.bib']);
+  const walk = (dir) => {
+    if (!fs.existsSync(dir)) return;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (path.resolve(full) === path.resolve(buildDir)) continue;
+        walk(full);
+      } else if (exts.has(path.extname(entry.name).toLowerCase())) {
+        results.push(full);
+      }
+    }
+  };
+  walk(srcDir);
+  return results;
+}
+
+function parseListEntriesForBaseline(listPath, defaultType) {
+  const entries = [];
+  if (!listPath || !fs.existsSync(listPath)) return entries;
+  const lines = fs.readFileSync(listPath, 'utf-8').split(/\r?\n/);
+  const entryRegex = /\\contentsline\s*\{([^}]+)\}\{\\numberline\s*\{([^}]+)\}\{(.*)\}\}\{(\d+)\}\{([^}]*)\}/;
+  for (const line of lines) {
+    const m = line.match(entryRegex);
+    if (!m) continue;
+    entries.push({
+      type: defaultType,
+      number: m[2].trim(),
+      page: parseInt(m[4], 10),
+      anchor: m[5].trim(),
+      label: null
+    });
+  }
+  return entries;
+}
+
 /**
- * Executa auditoria pós-atualização: prova de integridade da Zona 3 + doctor + check.
+ * Captura o baseline real (páginas, caixas e flutuadores) a partir de main.log e main.aux ANTES de atualizar config.tex.
+ * Se main.aux ou main.log estiverem ausentes ou desatualizados e allowBuild=true, compila o projeto atual antes.
  */
-function runPostUpdateVerification(repoDir, { quiet = false, allowedCreateIfMissing = [] } = {}) {
+function capturePreUpdateBaseline(repoDir, { allowBuild = true, quiet = false } = {}) {
+  let logPath = resolveBuildArtifact(repoDir, 'main.log');
+  let auxPath = resolveBuildArtifact(repoDir, 'main.aux');
+  const runXmlPath = resolveBuildArtifact(repoDir, 'main.run.xml');
+
+  let needsBuild = !logPath || !auxPath;
+  if (!needsBuild && logPath) {
+    const logMtime = fs.statSync(logPath).mtimeMs;
+    const inputs = listInputTexAndBibFiles(repoDir);
+    for (const inp of inputs) {
+      try {
+        if (fs.statSync(inp).mtimeMs > logMtime + 1500) {
+          needsBuild = true;
+          break;
+        }
+      } catch (e) {}
+    }
+    if (!needsBuild && runXmlPath && fs.existsSync(runXmlPath)) {
+      try {
+        if (/active="1"/.test(fs.readFileSync(runXmlPath, 'utf-8'))) needsBuild = true;
+      } catch (e) {}
+    }
+  }
+
+  let builtNow = false;
+  let buildOk = !needsBuild;
+  if (needsBuild && allowBuild) {
+    const probe = spawnSync('latexmk', ['--version'], { cwd: repoDir, stdio: 'pipe', encoding: 'utf-8' });
+    if (!probe.error && probe.status === 0) {
+      if (!quiet) {
+        console.log(`\n${C.cyan}[Pré-Update] Gerando .aux/.log atuais antes de atualizar src/config.tex (baseline de comparação)...${C.reset}`);
+      }
+      const resBuild = spawnSync(
+        'latexmk',
+        ['-pdf', '-silent', '-interaction=nonstopmode', '-outdir=build', '-cd', path.join('src', 'main.tex')],
+        {
+          cwd: repoDir,
+          env: { ...process.env, max_print_line: '10000' },
+          stdio: 'pipe',
+          encoding: 'utf-8',
+          timeout: 180000
+        }
+      );
+      builtNow = true;
+      buildOk = resBuild.status === 0;
+      logPath = resolveBuildArtifact(repoDir, 'main.log');
+      auxPath = resolveBuildArtifact(repoDir, 'main.aux');
+    }
+  }
+
+  const lofPath = resolveBuildArtifact(repoDir, 'main.lof');
+  const lotPath = resolveBuildArtifact(repoDir, 'main.lot');
+  const loqPath = resolveBuildArtifact(repoDir, 'main.loq');
+
+  const baseline = {
+    builtNow,
+    buildOk,
+    hasArtifacts: {
+      log: Boolean(logPath),
+      aux: Boolean(auxPath),
+      lof: Boolean(lofPath),
+      lot: Boolean(lotPath),
+      loq: Boolean(loqPath)
+    },
+    pages: null,
+    underfullVbox: 0,
+    overfullVbox: 0,
+    overfullHbox: 0,
+    floats: []
+  };
+
+  if (logPath && fs.existsSync(logPath)) {
+    const logTxt = fs.readFileSync(logPath, 'utf-8');
+    const outMatch = logTxt.match(/Output written on [\s\S]*?\([\s\r\n]*([0-9]+)\s+pages?/i);
+    if (outMatch) baseline.pages = parseInt(outMatch[1], 10);
+    baseline.underfullVbox = (logTxt.match(/^Underfull \\vbox/gm) || []).length;
+    baseline.overfullVbox = (logTxt.match(/^Overfull \\vbox/gm) || []).length;
+    baseline.overfullHbox = (logTxt.match(/^Overfull \\hbox/gm) || []).length;
+  }
+
+  if (auxPath && fs.existsSync(auxPath)) {
+    const auxLines = fs.readFileSync(auxPath, 'utf-8').split(/\r?\n/);
+    const labelsByAnchor = new Map();
+    const floatLabelsFallback = [];
+    const newlabelRe = /\\newlabel\{([^}]+)\}\{\{([^}]*)\}\{([^}]*)\}\{(.*)\}\{([^}]*)\}\{[^}]*\}\}/;
+    for (const line of auxLines) {
+      const m = line.match(newlabelRe);
+      if (!m) continue;
+      const label = m[1].trim();
+      const number = m[2].trim();
+      const page = parseInt(m[3], 10);
+      const anchor = m[5].trim();
+      if (isNaN(page)) continue;
+      if (anchor) labelsByAnchor.set(anchor, { label, number, page, anchor });
+      if (/^(table|figure|quadro)\./.test(anchor)) {
+        const type = anchor.startsWith('figure.') ? 'Figura' : (anchor.startsWith('quadro.') ? 'Quadro' : 'Tabela');
+        floatLabelsFallback.push({ type, number, page, anchor, label });
+      }
+    }
+
+    const listEntries = [
+      ...parseListEntriesForBaseline(lotPath, 'Tabela'),
+      ...parseListEntriesForBaseline(lofPath, 'Figura'),
+      ...parseListEntriesForBaseline(loqPath, 'Quadro')
+    ];
+
+    const byKey = new Map();
+    for (const e of listEntries) {
+      const auxInfo = e.anchor ? labelsByAnchor.get(e.anchor) : null;
+      const label = auxInfo ? auxInfo.label : null;
+      const key = label || e.anchor || `${e.type}:${e.number}`;
+      if (!byKey.has(key)) {
+        byKey.set(key, { key, type: e.type, number: e.number, label, page: e.page });
+      }
+    }
+    for (const fl of floatLabelsFallback) {
+      const key = fl.label || fl.anchor;
+      if (!byKey.has(key)) {
+        byKey.set(key, { key, type: fl.type, number: fl.number, label: fl.label, page: fl.page });
+      }
+    }
+    baseline.floats = Array.from(byKey.values());
+  }
+
+  return baseline;
+}
+
+/**
+ * Compara o baseline pré-update com o check.js --json pós-update para diagnosticar o impacto de src/config.tex.
+ */
+function compareBaselineWithCheck(baseline, checkReport) {
+  if (!baseline) return null;
+  if (!baseline.hasArtifacts.log || !baseline.hasArtifacts.aux || !checkReport || checkReport.parseError) {
+    return {
+      available: false,
+      reason: !baseline.hasArtifacts.aux
+        ? 'Artefatos .aux/.log pré-update indisponíveis (compilador LaTeX ausente antes do update).'
+        : 'Relatório JSON do check pós-update indisponível.',
+      before: baseline
+    };
+  }
+
+  const pagesBefore = baseline.pages;
+  const pagesAfter = checkReport.summary?.pages ?? checkReport.geometryAudit?.pagesAnalyzed ?? null;
+  const deltaPages = (pagesBefore !== null && pagesAfter !== null) ? (pagesAfter - pagesBefore) : null;
+
+  const afterFloats = Array.isArray(checkReport.layoutAudit?.floatsSummary) ? checkReport.layoutAudit.floatsSummary : [];
+  const afterByKey = new Map();
+  const afterByTypeNum = new Map();
+  for (const fl of afterFloats) {
+    if (fl.label) afterByKey.set(fl.label, fl);
+    if (fl.tipo && fl.numero) afterByTypeNum.set(`${fl.tipo}:${fl.numero}`, fl);
+  }
+
+  const floatsShifted = [];
+  for (const b of baseline.floats) {
+    const a = (b.label && afterByKey.get(b.label)) || afterByTypeNum.get(`${b.type}:${b.number}`) || null;
+    if (a && typeof a.pagina === 'number' && a.pagina !== b.page) {
+      floatsShifted.push({
+        label: b.label || a.label || b.key,
+        type: b.type,
+        number: b.number,
+        pageBefore: b.page,
+        pageAfter: a.pagina,
+        delta: a.pagina - b.page
+      });
+    }
+  }
+
+  const li = checkReport.buildDiagnostics?.layoutIssues || {};
+  const uvAfter = li.underfullVbox?.length ?? 0;
+  const ovAfter = li.overfullVbox?.length ?? 0;
+  const ohAfter = li.overfullHbox?.length ?? 0;
+  const driftsAfter = checkReport.layoutAudit?.floatDrifts?.length ?? 0;
+  const errsAfter = checkReport.summary?.errorsCount ?? 0;
+  const converged = checkReport.buildDiagnostics?.buildConverged !== false;
+
+  const uvDelta = uvAfter - baseline.underfullVbox;
+  const ovDelta = ovAfter - baseline.overfullVbox;
+  const ohDelta = ohAfter - baseline.overfullHbox;
+
+  let recommendation = 'KEEP';
+  let summary = 'Paginação e flutuadores 100% preservados sem regressões.';
+  if (errsAfter > 0 || !converged) {
+    recommendation = 'ROLLBACK_OR_INVESTIGATE';
+    summary = `Build pós-update apresentou ${errsAfter} erro(s) ou não convergiu; avalie corrigir ou reverter com --rollback.`;
+  } else if (Math.abs(deltaPages || 0) > 2 || floatsShifted.length >= 3 || uvDelta >= 2 || ohDelta >= 2) {
+    recommendation = 'CONSIDER_SKIP_CONFIG';
+    summary = `Mudança perceptível de layout (Δ págs: ${deltaPages ?? '?'}, ${floatsShifted.length} flutuador(es) deslocado(s)). Se estiver perto da banca, considere reaplicar com --skip-config.`;
+  } else if ((deltaPages || 0) !== 0 || floatsShifted.length > 0) {
+    summary = `Ajuste leve de paginação (Δ págs: ${deltaPages}, ${floatsShifted.length} flutuador(es) ajustado(s)) sem erros.`;
+  }
+
+  return {
+    available: true,
+    before: {
+      builtNow: baseline.builtNow,
+      hasArtifacts: baseline.hasArtifacts,
+      pages: pagesBefore,
+      floatsCount: baseline.floats.length,
+      underfullVbox: baseline.underfullVbox,
+      overfullVbox: baseline.overfullVbox,
+      overfullHbox: baseline.overfullHbox
+    },
+    after: {
+      hasAux: Boolean(checkReport.layoutAudit?.hasAux),
+      autoBuilt: Boolean(checkReport.buildDiagnostics?.autoBuilt),
+      buildConverged: converged,
+      pages: pagesAfter,
+      floatsCount: afterFloats.length,
+      underfullVbox: uvAfter,
+      overfullVbox: ovAfter,
+      overfullHbox: ohAfter,
+      floatDrifts: driftsAfter,
+      hyphenatedPageBreaks: checkReport.geometryAudit?.hyphenatedPageBreaks?.length ?? 0
+    },
+    deltaPages,
+    floatsShifted,
+    deltas: {
+      underfullVbox: uvDelta,
+      overfullVbox: ovDelta,
+      overfullHbox: ohDelta
+    },
+    recommendation,
+    summary
+  };
+}
+
+/**
+ * Executa auditoria pós-atualização: prova de integridade da Zona 3 + doctor + check + comparativo config.tex.
+ */
+function runPostUpdateVerification(repoDir, { quiet = false, allowedCreateIfMissing = [], preBaseline = null } = {}) {
   const allowedSet = new Set(allowedCreateIfMissing.map(p => p.replace(/\\/g, '/')));
   const verification = {
     sacredTouched: [],
     createIfMissingAdded: [],
     sacredIntact: true,
     doctor: null,
-    check: null
+    check: null,
+    configImpactComparison: null
   };
 
   // 1. Prova via git status de que nenhum arquivo sagrado foi modificado ou deletado
@@ -882,6 +1170,11 @@ function runPostUpdateVerification(repoDir, { quiet = false, allowedCreateIfMiss
     }
   }
 
+  // 4. Comparativo Antes vs. Depois de src/config.tex (se havia baseline)
+  if (preBaseline) {
+    verification.configImpactComparison = compareBaselineWithCheck(preBaseline, verification.check);
+  }
+
   return verification;
 }
 
@@ -907,7 +1200,7 @@ function printVerificationReport(verification, { backupTag, createdBranch, upstr
     const st = c.summary?.status || 'OK';
     const errs = c.summary?.errorsCount ?? 0;
     const warns = c.summary?.warningsCount ?? 0;
-    const pages = c.geometryAudit?.pagesAnalyzed || '?';
+    const pages = c.summary?.pages ?? c.geometryAudit?.pagesAnalyzed ?? '?';
     const overfull = c.buildDiagnostics?.layoutIssues?.overfullHbox?.length ?? 0;
     const drifts = c.layoutAudit?.floatDrifts?.length ?? 0;
     const g = c.geometryAudit || {};
@@ -922,6 +1215,13 @@ function printVerificationReport(verification, { backupTag, createdBranch, upstr
     }
   } else if (verification.check) {
     console.log(`  Auditoria (check):  ${C.yellow}Não foi possível ler o JSON completo (rode '.\\make.bat check' para detalhes)${C.reset}`);
+  }
+
+  const cmp = verification.configImpactComparison;
+  if (cmp && cmp.available) {
+    const recColor = cmp.recommendation === 'KEEP' ? C.green : (cmp.recommendation === 'CONSIDER_SKIP_CONFIG' ? C.yellow : C.red);
+    console.log(`  Impacto config.tex: ${recColor}${C.bold}${cmp.recommendation}${C.reset} (${cmp.before.pages} -> ${cmp.after.pages} págs | ${cmp.after.floatsCount} flutuadores, ${cmp.floatsShifted.length} deslocado(s) | Underfull \\vbox: ${cmp.before.underfullVbox}->${cmp.after.underfullVbox} | Overfull \\hbox: ${cmp.before.overfullHbox}->${cmp.after.overfullHbox})`);
+    console.log(`                      ${C.gray}${cmp.summary}${C.reset}`);
   }
 
   console.log(`\n${C.bold}Como concluir ou desfazer:${C.reset}`);
@@ -1091,6 +1391,13 @@ async function runWizard(repoDir, scriptRepoDir, opts) {
       ? buildUpdatePlan(repoDir, src.upstreamManifest, src.existsInSource, src.readSourceFile, true)
       : { plan, assistedFindings, sacredDetected };
 
+    const ansVerify = (await ui.ask(`\nExecutar validação completa após atualizar (baseline .aux/.log + Zona 3 + doctor + check)? [S/n]: `)).toLowerCase();
+    const shouldVerify = ansVerify === '' || ansVerify === 's' || ansVerify === 'sim' || ansVerify === 'y';
+    const configWillChange = finalPlanBundle.plan.toUpdate.includes('src/config.tex');
+    const preBaseline = (shouldVerify && configWillChange)
+      ? capturePreUpdateBaseline(repoDir, { allowBuild: true, quiet: false })
+      : null;
+
     const { backupTag, createdBranch } = executeSyncInfra(repoDir, finalPlanBundle.plan, src.readSourceFile, {
       currentBranch,
       currentHead,
@@ -1102,10 +1409,10 @@ async function runWizard(repoDir, scriptRepoDir, opts) {
     console.log(`  Tag de backup:   ${C.bold}${backupTag}${C.reset}`);
     console.log(`  Branch isolada:  ${C.bold}${createdBranch}${C.reset} (branch '${currentBranch}' intacta)`);
 
-    const ansVerify = (await ui.ask(`\nExecutar validação completa agora (prova da Zona 3 + doctor + build/check)? [S/n]: `)).toLowerCase();
-    if (ansVerify === '' || ansVerify === 's' || ansVerify === 'sim' || ansVerify === 'y') {
+    if (shouldVerify) {
       const verification = runPostUpdateVerification(repoDir, {
-        allowedCreateIfMissing: src.upstreamManifest.zones?.createIfMissing?.paths || []
+        allowedCreateIfMissing: src.upstreamManifest.zones?.createIfMissing?.paths || [],
+        preBaseline
       });
       printVerificationReport(verification, {
         backupTag,
@@ -1248,6 +1555,7 @@ async function main() {
     verification: null
   };
 
+  let preBaseline = null;
   if (opts.syncInfra && !opts.dryRun) {
     if (opts.targetDir) {
       const err = { ok: false, error: 'Por segurança, --sync-infra não aceita --target. Execute o script dentro do próprio repositório que deseja atualizar.' };
@@ -1276,6 +1584,10 @@ async function main() {
       process.exit(0);
     }
 
+    if (opts.verify && plan.toUpdate.includes('src/config.tex')) {
+      preBaseline = capturePreUpdateBaseline(repoDir, { allowBuild: true, quiet: opts.json });
+    }
+
     try {
       const applied = executeSyncInfra(repoDir, plan, src.readSourceFile, {
         currentBranch,
@@ -1295,7 +1607,8 @@ async function main() {
     if (opts.verify) {
       result.verification = runPostUpdateVerification(repoDir, {
         quiet: opts.json,
-        allowedCreateIfMissing: src.upstreamManifest.zones?.createIfMissing?.paths || []
+        allowedCreateIfMissing: src.upstreamManifest.zones?.createIfMissing?.paths || [],
+        preBaseline
       });
     }
   }

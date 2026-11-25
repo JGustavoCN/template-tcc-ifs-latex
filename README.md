@@ -268,15 +268,15 @@ O template foi projetado com separação estrita entre o conteúdo autoral do al
 
 - **Projetos já na v2.5.0+:** basta dizer à IA:
   ```text
-  Use a skill template_updater para verificar e atualizar a infraestrutura do template oficial em branch isolada e me entregar um relatório detalhado com as branches (original intacta vs. nova), tag de backup, avaliação de riscos, prova de que a Zona 3 ficou intacta e resultado de doctor/check.
+  Use a skill template_updater para verificar e atualizar a infraestrutura do template oficial em branch isolada e me entregar um relatório detalhado com as branches (não apague nenhuma branch e me diga claramente em qual devo continuar trabalhando), tag de backup, confirmação de que .aux/.log/.pdf foram gerados antes e depois, prova de que a Zona 3 ficou intacta, resultado de doctor/check, comparativo de paginação de src/config.tex e eventuais arquivos órfãos ou *-SAVE-ERROR.
   ```
 - **Projetos antigos (< v2.5.0, sem a skill ainda):** cole este prompt:
   ```text
   Leia o guia oficial em https://raw.githubusercontent.com/JGustavoCN/template-tcc-ifs-latex/main/docs/GUIA_ATUALIZACAO_TEMPLATE.md e conduza a atualização segura deste projeto antigo:
   1. Verifique git status primeiro (se houver alterações locais pendentes, pare e me pergunte antes de commitar).
   2. Baixe apenas scripts/update_template.js do repositório oficial e rode node scripts/update_template.js --dry-run --json, me mostrando as 3 Zonas e os eventuais riscos antes de aplicar.
-  3. Após minha aprovação, aplique em branch isolada com node scripts/update_template.js --sync-infra --branch --verify --json.
-  4. Me entregue um relatório detalhado contendo: branch original (confirmando que permaneceu 100% intacta), branch isolada criada, tag de backup, confirmação via git status/diff de que nenhum arquivo da Zona 3 foi alterado, resultado completo de doctor e check, avaliação de impacto de src/config.tex na paginação e a recomendação clara entre manter (commit/merge), usar --skip-config ou desfazer com --rollback.
+  3. Após minha aprovação, garanta o build atual (para gerar .aux/.log de baseline) e aplique em branch isolada com node scripts/update_template.js --sync-infra --branch --verify --json.
+  4. Me entregue um relatório detalhado contendo: branch original (confirmando que permaneceu 100% intacta), branch isolada criada, tag de backup, em qual branch devo continuar meu TCC (não apague nenhuma branch), confirmação de que .aux/.log/.pdf foram gerados e não restou *-SAVE-ERROR, confirmação via git status/diff de que nenhum arquivo da Zona 3 foi alterado, resultado completo de doctor e check, comparativo Antes vs. Depois de paginação e flutuadores (impacto de src/config.tex) e a recomendação clara entre manter (commit/merge), usar --skip-config ou desfazer com --rollback.
   ```
 
 ---

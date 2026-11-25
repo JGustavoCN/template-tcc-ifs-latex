@@ -86,13 +86,13 @@ update:
 
 clean:
 	@echo "Limpando arquivos auxiliares..."
-	@$(CLEAN_CMD)
+	@-$(CLEAN_CMD)
 	@-$(RM_SAVE_ERR)
 	@echo "Limpeza de arquivos auxiliares concluída."
 
 cleanall:
 	@echo "Limpando todos os arquivos gerados (incluindo PDF)..."
-	@$(CLEAN_ALL_CMD)
+	@-$(CLEAN_ALL_CMD)
 	@-$(RM_SAVE_ERR)
 	@echo "Limpeza total concluída."
 
