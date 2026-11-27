@@ -24,7 +24,7 @@ As diretrizes operacionais completas, permissões de autonomia, comandos do Make
    - Respeite as regras de consentimento da skill `.agents/skills/autonomy_rules`.
 5. **Integração Opcional com Google Docs / Drive (`mcp-gdocs-latex`):**
    - Verifique primeiro se o servidor MCP `mcp-gdocs` está conectado na sessão (regras em `.agents/rules/mcp_gdocs.md`).
-   - Quando ativo, utilize exclusivamente as **20 ferramentas ortogonais da v2.0.0** (ver `.agents/skills/mcp_gdocs_guide/SKILL.md` e `.agents/skills/tcc_bridge_workflow/SKILL.md`).
+   - Quando ativo, utilize exclusivamente as **22 ferramentas ortogonais da v2.2.0** (ver `.agents/skills/mcp_gdocs_guide/SKILL.md`, `.agents/skills/sync_latex_to_gdocs/SKILL.md`, `.agents/skills/sync_gdocs_to_latex/SKILL.md` e `.agents/skills/tcc_bridge_workflow/SKILL.md`).
    - Quando ausente, opere 100% local via `Makefile`/`make.bat` e informe ao usuário que existe a integração opcional caso ele peça sincronização com Google Docs/Drive.
 6. **Skills Nativas Recomendadas:**
    - Use `/antigravity-guide` para dúvidas de uso do Antigravity (IDE, CLI, atalhos).

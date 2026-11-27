@@ -40,6 +40,8 @@
         ".agents/skills/iteration_report/SKILL.md",
         ".agents/skills/makefile_usage/SKILL.md",
         ".agents/skills/mcp_gdocs_guide/SKILL.md",
+        ".agents/skills/sync_gdocs_to_latex/SKILL.md",
+        ".agents/skills/sync_latex_to_gdocs/SKILL.md",
         ".agents/skills/tcc_bridge_workflow/SKILL.md",
         ".agents/skills/template_updater/SKILL.md"
       ],
